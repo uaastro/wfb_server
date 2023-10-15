@@ -1,0 +1,23 @@
+[Unit]
+Description=Wifibroadcast server
+After=network.target
+StartLimitInterval=20
+StartLimitBurst=21
+#After=NetworkManager.service
+
+[Service]
+#Type=oneshot
+#Type=simple
+RemainAfterExit=yes
+#ExecStart=/bin/true
+#ExecReload=/bin/true
+ExecStart=/usr/sbin/wfb_server/wfb_server
+User=root
+TimeoutStopSec=5s
+#Restart=on-failure
+Restart=always
+RestartSec=1s
+StandardError=inher
+
+[Install]
+WantedBy=multi-user.target
