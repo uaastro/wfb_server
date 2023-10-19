@@ -20,10 +20,10 @@ UDP_IP_MvPr = "192.168.144.100"
 UDP_PORT_MvPr = 14500
 
 # Настройки UART
-UART_PORT_1 = '/dev/ttyUSB0'  # Путь к порту UART
+UART_PORT_1 = '/dev/ttyS0'  # Путь к порту UART
 UART_BAUDRATE_1 = 115200  # Скорость обмена данными
 
-UART_PORT_2 = '/dev/ttyUSB1'  # Путь к порту UART
+UART_PORT_2 = '/dev/ttyS4'  # Путь к порту UART
 UART_BAUDRATE_2 = 115200  # Скорость обмена данными
 time_int = 1
 
