@@ -7,6 +7,7 @@ import select
 import socket
 import os
 import logging
+import time
 
 @click.command()
 @click.option('--conf', default="wfb_server.cfg", help='path to config file')
@@ -22,18 +23,26 @@ def main(conf):
     
     logging.basicConfig(
     level=logging.INFO,  # Уровень логирования
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    filename=wfb_server_dir+'wfb_server.log',  # Имя файла для записи л>
-    filemode='a')  # Режим записи в файл (append)
+    format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    filename = wfb_server_dir+'wfb_server.log',  # Имя файла для записи л>
+    filemode = 'a')  # Режим записи в файл (append)
     
     logging.info("starting wfb-server...")
     
     process_list = []
     process_id={}
     
-    UDP_IP = "127.0.0.1"
-    UDP_PORT = 14550
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:    
+        wfb_mon_ip = config['wfb_server']['wfb_mon_ip']
+        wfb_mon_port = int(config['wfb_server']['wfb_mon_port'])
+        wfb_server_ip = config['wfb_server']['wfb_server_ip']
+        wfb_server_port = int(config['wfb_server']['wfb_server_port'])
+    except:
+        wfb_mon_ip = '127.0.0.1'
+        wfb_mon_port = 14550
+        wfb_server_ip = '0.0.0.0'
+        wfb_server_port = 14550
 
     for section in sections:
         
@@ -121,7 +130,7 @@ def main(conf):
                     if output:
                         print(f"[{process_id[process.pid]}]", output.strip())
                         output = process_id[process.pid] + ' '+ output
-                        sock.sendto(output.encode("utf-8"), (UDP_IP, UDP_PORT))
+                        sock.sendto(output.encode("utf-8"), (wfb_mon_ip, wfb_mon_port))
 
 
 
