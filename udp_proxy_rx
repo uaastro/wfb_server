@@ -3,54 +3,41 @@
 import socket
 import struct
 
-import click
-import configparser
 
 UDP_MAX_PKT_SIZE=2048
-UDP_IP_TX= "127.0.0.1"
-UDP_PORT_TX = 5620
+UDP_IP_TX= "192.168.144.100"
+UDP_PORT_TX = 5600
+UDP_IP_RX = "0.0.0.0"
+UDP_PORT_RX = 5600
+
+
 link_id = 1
 pkt_num = 0
 rs_alrt = 0
 rs_alrt_max = 10
 
-udp_streams = [
-    {"ip": "127.0.0.1", "port": 5600},
-    #{"ip": "127.0.0.1", "port": 5681},
-]
+sock_rx= socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock_rx.bind((UDP_IP_RX,UDP_PORT_RX))
 
-sock_tx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock_tx=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
 print("udp_proxy_rx started...")
-
-sockets = []
-for stream in udp_streams:
-    udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    print(f'rx: {stream["ip"]} : {stream["port"]}')
-    udp_socket.bind((stream["ip"], stream["port"]))
-    #udp_socket.setblocking(0)  # Установка неблокирующего режима
-    sockets.append(udp_socket)
-
+print(f"rx: {UDP_IP_RX} : {UDP_PORT_RX}")
 print(f"tx: {UDP_IP_TX} : {UDP_PORT_TX}")
 
 while True:
-    for udp_socket in sockets:
-        try:
-            packet, addr = udp_socket.recvfrom(UDP_MAX_PKT_SIZE) 
+    packet, addr = sock_rx.recvfrom(UDP_MAX_PKT_SIZE) 
+    PACKET_SIZE = len(packet)
+    link_id, packet_number, data= struct.unpack("!II"+str((PACKET_SIZE - 4 - 4))+"s", packet)
+    #print (f"{link_id} {packet_number}")
+    if packet_number > pkt_num:
+        sock_tx.sendto(data,(UDP_IP_TX, UDP_PORT_TX))
+        #print (addr,' pkt_num: ',pkt_num," packet_number: ",packet_number)
+        pkt_num=packet_number
+        rs_alrt=0
+    else:
+        rs_alrt +=1
+        if rs_alrt >= rs_alrt_max:
+            pkt_num=packet_number
+            rs_alrt = 0
 
-            PACKET_SIZE = len(packet)
-            link_id, packet_number, data= struct.unpack("!II"+str((PACKET_SIZE - 4 - 4))+"s", packet)
-            #print (f"{link_id} {packet_number}")
-            if packet_number > pkt_num:
-                sock_tx.sendto(data,(UDP_IP_TX, UDP_PORT_TX))
-                #print (udp_socket.getsockname(),' pkt_num: ',pkt_num," packet_number: ",packet_number)
-                pkt_num=packet_number
-                rs_alrt=0
-            else:
-                rs_alrt +=1
-                if rs_alrt >= rs_alrt_max:
-                    pkt_num=packet_number
-                    rs_alrt = 0
-                
-                continue
-        except socket.error:
-            continue

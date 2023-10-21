@@ -6,8 +6,8 @@ import configparser
 import select
 import socket
 import os
+import sys
 import logging
-import time
 
 @click.command()
 @click.option('--conf', default="wfb_server.cfg", help='path to config file')
@@ -22,9 +22,9 @@ def main(conf):
     sections = config.sections()
     
     logging.basicConfig(
-    level=logging.INFO,  # Уровень логирования
+    level=logging.INFO,
     format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    filename = wfb_server_dir+'wfb_server.log',  # Имя файла для записи л>
+    filename = wfb_server_dir+'wfb_server.log',
     filemode = 'a')  # Режим записи в файл (append)
     
     logging.info("starting wfb-server...")
