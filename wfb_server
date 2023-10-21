@@ -96,7 +96,7 @@ def main(conf):
             
         elif section[:12]=='udp_proxy_rx':
             options=config[section]
-            udp_xx=[wfb_server_dir+"udp_proxy_rx"]
+            udp_xx=[wfb_server_dir+"udp_proxy_rx","--ip_tx",options['uprx_ip_tx'],"--port_tx",options['uprx_port_tx'],"--ip_rx",options['uprx_ip_rx'],"--port_rx",options['uprx_port_rx'],"--mpkts",options['uprx_mpkts']]
             process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
             process_list.append(process)
             process_id[process.pid] = section

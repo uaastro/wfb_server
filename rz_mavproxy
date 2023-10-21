@@ -67,24 +67,5 @@ while True:
     except Exception as e:
         print(f"error: {e}")
         time.sleep(1)
-
-
-
-'''
-   if addr[0] == UDP_IP_GS:
-        #print ("=== GS ===")
-        ser_1.write(data)
-        ser_2.write(data)
-    elif addr[0] == UDP_IP_MP:
-        #print ("=== MP ===")
-        ser_1.write(data)
-        ser_2.write(data)
-    elif (addr[0] == UDP_IP_ALFA) or (addr[0] == "127.0.0.1"):
-        #print ("=== ALFA ===")
-        sock_proxy.sendto(data, (UDP_IP_GS, UDP_PORT_GS))
-        sock_proxy.sendto(data, (UDP_IP_MP, UDP_PORT_MP))
-
-
-'''
         
         

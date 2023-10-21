@@ -2,42 +2,57 @@
 
 import socket
 import struct
+import click
+import sys
 
 
-UDP_MAX_PKT_SIZE=2048
-UDP_IP_TX= "192.168.144.100"
-UDP_PORT_TX = 5600
-UDP_IP_RX = "0.0.0.0"
-UDP_PORT_RX = 5600
+@click.command()
+@click.option('--mpkts', default=2048, help='udp max pkt size')
+@click.option('--ip_tx', default='127.0.0.1', help='ip of destination host')
+@click.option('--port_tx', default=5700, help='port of destination host')
+@click.option('--ip_rx', default='0.0.0.0', help='ip of source host')
+@click.option('--port_rx', default=5600, help='port oof source host')
+
+def main(mpkts,ip_tx,port_tx,ip_rx,port_rx):
+
+    UDP_MAX_PKT_SIZE = mpkts
+    UDP_IP_TX= ip_tx
+    UDP_PORT_TX = port_tx
+    UDP_IP_RX = ip_rx
+    UDP_PORT_RX = port_rx
 
 
-link_id = 1
-pkt_num = 0
-rs_alrt = 0
-rs_alrt_max = 10
+    link_id = 1
+    pkt_num = 0
+    rs_alrt = 0
+    rs_alrt_max = 10
 
-sock_rx= socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock_rx.bind((UDP_IP_RX,UDP_PORT_RX))
+    sock_rx= socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock_rx.bind((UDP_IP_RX,UDP_PORT_RX))
 
-sock_tx=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock_tx=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-print("udp_proxy_rx started...")
-print(f"rx: {UDP_IP_RX} : {UDP_PORT_RX}")
-print(f"tx: {UDP_IP_TX} : {UDP_PORT_TX}")
+    print("udp_proxy_rx started...")
+    print(f"rx: {UDP_IP_RX} : {UDP_PORT_RX}")
+    print(f"tx: {UDP_IP_TX} : {UDP_PORT_TX}")
 
-while True:
-    packet, addr = sock_rx.recvfrom(UDP_MAX_PKT_SIZE) 
-    PACKET_SIZE = len(packet)
-    link_id, packet_number, data= struct.unpack("!II"+str((PACKET_SIZE - 4 - 4))+"s", packet)
-    #print (f"{link_id} {packet_number}")
-    if packet_number > pkt_num:
-        sock_tx.sendto(data,(UDP_IP_TX, UDP_PORT_TX))
-        #print (addr,' pkt_num: ',pkt_num," packet_number: ",packet_number)
-        pkt_num=packet_number
-        rs_alrt=0
-    else:
-        rs_alrt +=1
-        if rs_alrt >= rs_alrt_max:
+    while True:
+        packet, addr = sock_rx.recvfrom(UDP_MAX_PKT_SIZE) 
+        PACKET_SIZE = len(packet)
+        link_id, packet_number, data= struct.unpack("!II"+str((PACKET_SIZE - 4 - 4))+"s", packet)
+        #print (f"{link_id} {packet_number}")
+        if packet_number > pkt_num:
+            sock_tx.sendto(data,(UDP_IP_TX, UDP_PORT_TX))
+            #print (addr,' pkt_num: ',pkt_num," packet_number: ",packet_number)
             pkt_num=packet_number
-            rs_alrt = 0
+            rs_alrt=0
+        else:
+            rs_alrt +=1
+            if rs_alrt >= rs_alrt_max:
+                pkt_num=packet_number
+                rs_alrt = 0
+
+if __name__ == '__main__':
+    main()
+
 
