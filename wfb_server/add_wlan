@@ -1,0 +1,34 @@
+#!/usr/bin/python3
+import re
+import click
+
+@click.command()
+@click.argument('iw', nargs=-1)
+def main(iw):
+    """iw: wlan interface"""
+
+    nm_config_file = '/etc/NetworkManager/NetworkManager.conf'
+    
+    for wlan in iw:
+
+        with open(nm_config_file, 'r') as file:
+            nm_config = file.read()
+
+        pattern = r'\[keyfile\]'
+        if not re.search(pattern, nm_config):
+            nm_config += '\n[keyfile]\n'
+
+        pattern = r'unmanaged-devices\s*=\s*interface-name:'
+        if re.search(pattern, nm_config):
+            nm_config = re.sub(pattern, f'unmanaged-devices=interface-name:{wlan};interface-name:', nm_config)
+        else:
+            nm_config += f'unmanaged-devices=interface-name:{wlan};\n'
+
+        with open(nm_config_file, 'w') as file:
+            file.write(nm_config)
+
+        print(f'{wlan} added in {nm_config_file}')
+
+if __name__ == '__main__':
+    main()
+
