@@ -22,6 +22,10 @@ cp wfb_* /usr/bin/
 cp -r ./wfb_server /usr/sbin/
 cp ./wfb_server/wfb.service /etc/systemd/system/
 
+cat <<EOF >> /etc/bash.bashrc
+export PATH=\$PATH:/usr/sbin/wfb_server
+EOF
+
 # Start wfb_server service
 systemctl daemon-reload
 systemctl enable wfb.service

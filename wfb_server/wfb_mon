@@ -60,9 +60,9 @@ def main (ip,port,chname,shpkt,shrssi):
             d_ant_pkts = ant["pkts"]
             rssi_mlvl = 106 - abs(d_rssi_avg-16)
             d_total = 106
-            if d_rssi_avg > -50:
+            if d_rssi_avg > -70:
                 prgs_color='green'
-            elif d_rssi_avg > -70:
+            elif d_rssi_avg > -80:
                 prgs_color='yellow'
             else:
                 prgs_color='red'
