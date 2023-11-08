@@ -173,8 +173,8 @@ def main (ip,port,chname,shpkt,shrssi):
             #live.console.print(line.split())
             parts = re.split(r"\s+", line)
             if parts[0] == chname:
-                live.console.print(line.split())
                 if parts[2] == "ANT":
+                    live.console.print(line.split())
                     ant_num = int(parts[3])
                     pkts, rssi_min, rssi_avg, rssi_max = map(int, parts[4].split(":"))
                     for i in range(wlan_number*2):
@@ -185,6 +185,7 @@ def main (ip,port,chname,shpkt,shrssi):
                             ant_data[i]["rssi_max"] = rssi_max
                     #live.update(print_status(pkt, fec_r, pkts, pkt_lost, d_err, fec_r_s, pkt_lost_s, d_err_s,ant_data))
                 elif parts[2] == "PKT":
+                    live.console.print(line.split())
                     pkts_1, zero, pkts, fec_r_s, pkt_lost_s, d_err_s = map(int, parts[3].split(":"))
                     pkt+= pkts
                     fec_r+= fec_r_s 
