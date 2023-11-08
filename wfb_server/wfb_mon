@@ -44,7 +44,7 @@ def main (ip,port,chname,shpkt,shrssi):
         table_main.add_row(Rule(title=chname))
         
         table_rssi = Table(show_header=True,highlight=
-                      True,box=box.ROUNDED) #box.ASCII2
+                      True,box=box.ROUNDED,expand=True) #box.ASCII2
         
         table_rssi.add_column("[ANT]")
         table_rssi.add_column("pkt/s",justify="right")
@@ -82,7 +82,7 @@ def main (ip,port,chname,shpkt,shrssi):
             table_rssi.add_row(f"[grey58]{d_ant_num}[/]",f"{d_ant_pkts}",f"{d_rssi_min:3} < {d_rssi_avg:3} < {d_rssi_max:3}",progress)
 
         table_wlan_info = Table(show_header=False,highlight=
-                      True,box=box.ROUNDED,style="blue")
+                      True,box=box.ROUNDED,style="blue",expand=True)
         table_wlan_info.add_column("wlan")
         
         if pkts_max > 0:
@@ -100,7 +100,7 @@ def main (ip,port,chname,shpkt,shrssi):
         table_wlan_info.add_row(f"channel: {d_channel}({wifi_ch_freq(int(d_channel))} MHz) bandwidth: {d_bandwidth} pkt/s: {pkts_max} RSSI: [{prgs_color}]{rssi_avg_max}[/] dBm quality: [{qlt_color}]{quality}[/]%")
         
         table_wlan = Table(show_header=False,highlight=
-                      True,box=box.ROUNDED,style="blue")
+                      True,box=box.ROUNDED,style="blue",expand=True)
         table_wlan.add_column("wlan",min_width=74)
         table_wlan.add_row(f"{d_wlans_info[1:]}")
 
