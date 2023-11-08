@@ -147,6 +147,11 @@ def main (ip,port,chname,shpkt,shrssi):
     fec_r_s = 0
     pkt_lost_s =0
     d_err_s = 0
+    channel = 36
+    bandwidth = 20
+    wlan_number = 4
+    wlans_info = f"{wlan_number}:wlan0:wlan1:wlan2:wlan3".split(":")
+     
 
     for i in range(wlan_number):
         ant_data.append({"ant_num": i*100,"pkts": 0, "rssi_min": 0, "rssi_avg": 0, "rssi_max": 0})
@@ -159,7 +164,7 @@ def main (ip,port,chname,shpkt,shrssi):
     console.print("")
     #---------------------------------------------------------------------------------------------------
     
-    with Live(print_status(0,0,0,0,0,0,0,0,ant_data,0,0,f"{wlan_number}:wlan0:wlan1:wlan2:wlan3".split(":")), refresh_per_second=4) as live:
+    with Live(print_status(0,0,0,0,0,0,0,0,ant_data,channel,bandwidth,wlans_info), refresh_per_second=4) as live:
         
         while True:
             
