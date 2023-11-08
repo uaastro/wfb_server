@@ -31,6 +31,7 @@ def main(conf):
     
     process_list = []
     process_id={}
+    process_inf={}
     
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:    
@@ -52,8 +53,13 @@ def main(conf):
             channel = config[section]['channel']
             bandwidth = config[section]['bandwidth']
             bw_pf = config[section]['bw_pf']
+            wlans_info='INF '+channel+' '+bandwidth+' '
+            wlans_idx=0
+            wlans_str=''
 
             for wlan in wlans:
+                wlans_idx+=1
+                wlans_str+=':'+wlan
                 subprocess.run(f"ifconfig {wlan} down",shell=True, check=True)
 
                 subprocess.run(f"iw dev {wlan} set monitor otherbss",shell=True, check=True)
@@ -63,7 +69,9 @@ def main(conf):
                 subprocess.run(f"ifconfig {wlan} up",shell=True, check=True)
                 
                 subprocess.run(f"iw dev {wlan} set channel {channel} HT{bandwidth}{bw_pf}",shell=True, check=True)
-        
+            
+            wlans_info+=f"{wlans_idx}{wlans_str}"
+
         elif section[:2]=='tx':
             options=config[section]
             wfb_xx=["/usr/bin/wfb_tx","-p",options['radio_port'],"-u",options['udp_port'],"-K",options['tx_key'],"-B",options['bandwidth'],"-G",options['G_guard_interval'],"-S",
@@ -72,6 +80,7 @@ def main(conf):
             process=subprocess.Popen(wfb_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
             process_list.append(process)
             process_id[process.pid] = section
+            process_inf[process.pid] = wlans_info
             
         elif section[:2]=='rx':
             options=config[section]
@@ -79,6 +88,7 @@ def main(conf):
             process=subprocess.Popen(wfb_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
             process_list.append(process)
             process_id[process.pid] = section
+            process_inf[process.pid] = wlans_info
             
         elif section[:6]=='udp_tx':
             options=config[section]
@@ -86,6 +96,7 @@ def main(conf):
             process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
             process_list.append(process)
             process_id[process.pid] = section
+            #process_inf[process.pid] = wlans_info
             
         elif section[:12]=='udp_proxy_tx':
             options=config[section]
@@ -93,6 +104,7 @@ def main(conf):
             process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
             process_list.append(process)
             process_id[process.pid] = section
+            #process_inf[process.pid] = wlans_info
             
         elif section[:12]=='udp_proxy_rx':
             options=config[section]
@@ -100,14 +112,16 @@ def main(conf):
             process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
             process_list.append(process)
             process_id[process.pid] = section
-            
+            #process_inf[process.pid] = wlans_info
+
         elif section[:11]=='rz_mavproxy':
             options=config[section]
             udp_xx=[wfb_server_dir+"rz_mavproxy"]
             process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
             process_list.append(process)
             process_id[process.pid] = section
-            
+            #process_inf[process.pid] = wlans_info
+
     ext=False
 
     fd_list = [process.stdout.fileno() for process in process_list]
@@ -129,8 +143,12 @@ def main(conf):
                     output = process.stdout.readline()
                     if output:
                         print(f"[{process_id[process.pid]}]", output.strip())
+                        print(f"[{process_id[process.pid]}]", process_inf[process.pid],'\n')
+                        output_inf = process_id[process.pid] + ' '+ process_inf[process.pid]
+                        sock.sendto(output_inf.encode("utf-8"), (wfb_mon_ip, wfb_mon_port))
                         output = process_id[process.pid] + ' '+ output
                         sock.sendto(output.encode("utf-8"), (wfb_mon_ip, wfb_mon_port))
+                        
 
 
 
