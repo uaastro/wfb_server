@@ -25,7 +25,7 @@ def main(conf):
     level=logging.INFO,
     format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     filename = wfb_server_dir+'wfb_server.log',
-    filemode = 'a')  # Режим записи в файл (append)
+    filemode = 'w')  # Режим записи в файл (append)
     
     logging.info("starting wfb-server...")
     
