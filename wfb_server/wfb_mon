@@ -59,7 +59,7 @@ def main (ip,port,chname,shpkt,shrssi):
             d_ant_num = ant["ant_num"]
             d_ant_pkts = ant["pkts"]
 
-            if d_rssi_avg > rssi_avg_max:
+            if (d_rssi_avg > rssi_avg_max) and (d_ant_pkts > 0):
                 rssi_avg_max =  d_rssi_avg
             if d_ant_pkts > pkts_max:
                 pkts_max = d_ant_pkts
@@ -85,11 +85,22 @@ def main (ip,port,chname,shpkt,shrssi):
                       True,box=box.ROUNDED,style="blue",expand=True)
         table_wlan_info.add_column("wlan")
         
+        if rssi_avg_max > -70:
+                rssi_color='green'
+        elif rssi_avg_max > -80:
+            rssi_color='yellow'
+        else:
+            rssi_color='red'
+        if pkts_max == 0:
+            rssi_color="grey58"
+        
         if pkts_max > 0:
             quality = int(100 - (100*d_pkt_lost_s)/(pkts_max+d_pkt_lost_s))
         else: 
             quality = 0
+        
         qlt_color = 'green'
+        
         if quality > 97:
             qlt_color = 'green'
         elif quality > 89:
