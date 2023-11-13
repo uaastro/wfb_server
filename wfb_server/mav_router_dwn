@@ -22,7 +22,6 @@ print ("mav_router_dwn initialization...\n")
 # main loop for try...except
 while True:
     try:
-        # Подключение к UART
         sock_proxy = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock_proxy.bind((UDP_IP_ROUTER, UDP_PORT_ROUTER))
         print ("socket... ok\n")
