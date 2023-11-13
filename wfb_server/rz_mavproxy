@@ -25,6 +25,7 @@ UART_BAUDRATE_1 = 115200  # Скорость обмена данными
 
 UART_PORT_2 = '/dev/ttyS4'  # Путь к порту UART
 UART_BAUDRATE_2 = 115200  # Скорость обмена данными
+
 time_int = 1
 
 print ("Proxy initialization...\n")

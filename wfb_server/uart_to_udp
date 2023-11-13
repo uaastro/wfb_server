@@ -1,0 +1,30 @@
+#!/usr/bin/python3
+
+import serial
+import socket
+
+UART_PORT_1 = '/dev/ttyS0' 
+UART_BAUDRATE_1 = 115200 
+
+UART_PORT_2 = '/dev/ttyS4'
+UART_BAUDRATE_2 = 115200  
+
+UDP_SERVER_IP = '127.0.0.1'
+UDP_SERVER_PORT = 14775
+
+STX_v2_0 = b'\xfd'
+STX_v1_0 = b'\xfe'
+STX_v0_9 = b'\x55'
+
+ser = serial.Serial(UART_PORT_1, UART_BAUDRATE_1)
+udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+udp_address = (UDP_SERVER_IP, UDP_SERVER_PORT)
+
+while True:
+
+    start_of_frame = ser.read(1)
+    if start_of_frame == STX_v2_0:
+        header = ser.read(5)
+        payload_length = header[0]
+        mavlink_packet = start_of_frame + header + ser.read(payload_length) + ser.read(2)
+        udp_socket.sendto(mavlink_packet, udp_address)

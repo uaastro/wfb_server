@@ -96,7 +96,6 @@ def main(conf):
             process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
             process_list.append(process)
             process_id[process.pid] = section
-            #process_inf[process.pid] = wlans_info
             
         elif section[:12]=='udp_proxy_tx':
             options=config[section]
@@ -104,7 +103,6 @@ def main(conf):
             process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
             process_list.append(process)
             process_id[process.pid] = section
-            #process_inf[process.pid] = wlans_info
             
         elif section[:12]=='udp_proxy_rx':
             options=config[section]
@@ -112,7 +110,6 @@ def main(conf):
             process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
             process_list.append(process)
             process_id[process.pid] = section
-            #process_inf[process.pid] = wlans_info
 
         elif section[:11]=='rz_mavproxy':
             options=config[section]
@@ -120,7 +117,20 @@ def main(conf):
             process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
             process_list.append(process)
             process_id[process.pid] = section
-            #process_inf[process.pid] = wlans_info
+
+        elif section[:14]=='mav_router_dwn':
+            options=config[section]
+            udp_xx=[wfb_server_dir+"mav_router_dwn"]
+            process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+            process_list.append(process)
+            process_id[process.pid] = section
+
+        elif section[:14]=='mav_router_up':
+            options=config[section]
+            udp_xx=[wfb_server_dir+"mav_router_up"]
+            process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+            process_list.append(process)
+            process_id[process.pid] = section
 
     ext=False
 
@@ -133,9 +143,7 @@ def main(conf):
             for process in process_list:
                 return_code = process.poll()
                 if return_code is not None:
-                    # Процесс завершился
                     if return_code != 0:
-                        # Процесс завершился с ошибкой, выполните действия по обработке ошибки, например, вызов функции reinit()
                         print(f"[{process_id[process.pid]}] error! return code: {return_code}")
                         logging.error(f"[{process_id[process.pid]}] error! return code: {return_code}")
                         sys.exit(return_code)
