@@ -5,7 +5,7 @@ import serial
 import time
 
 UDP_IP_ROUTER = "0.0.0.0"
-UDP_PORT_ROUTER = 14785
+UDP_PORT_ROUTER = 14795
 
 UART_PORT_1 = '/dev/ttyS0'  
 UART_BAUDRATE_1 = 115200  
@@ -39,7 +39,7 @@ while True:
             pkt_gs +=1
             
             if (time.time() - time_ls) >= time_int:
-                #print(f"gs: {pkt_gs} pkt/s")
+                print(f"gs: {pkt_gs} pkt/s")
                 pkt_gs = 0
                 time_ls = time.time()
                 
