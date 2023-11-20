@@ -86,7 +86,7 @@ def main (ip,port,chname,shpkt,shrssi):
         table_wlan_info.add_column("wlan")
         
         if rssi_avg_max > -70:
-                rssi_color='green'
+            rssi_color='green'
         elif rssi_avg_max > -80:
             rssi_color='yellow'
         else:
