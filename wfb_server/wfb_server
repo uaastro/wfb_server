@@ -125,9 +125,15 @@ def main(conf):
             process_list.append(process)
             process_id[process.pid] = section
 
-        elif section[:14]=='mav_router_up':
+        elif section[:13]=='mav_router_up':
             options=config[section]
             udp_xx=[wfb_server_dir+"mav_router_up"]
+            process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+            process_list.append(process)
+            process_id[process.pid] = section
+        elif section[:11]=='uart_to_udp':
+            options=config[section]
+            udp_xx=[wfb_server_dir+"uart_to_udp"]
             process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
             process_list.append(process)
             process_id[process.pid] = section
