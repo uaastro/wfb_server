@@ -81,7 +81,7 @@ def main(conf):
                     "-i",options['i_link_id']] + wlans
             process=subprocess.Popen(wfb_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
             process_list.append(process)
-            process_id[process.pid] = sectgit config pull.ff onlyion
+            process_id[process.pid] = section
             process_inf[process.pid] = wlans_info
             
         elif section[:2]=='rx':
