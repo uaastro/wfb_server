@@ -22,7 +22,7 @@ def main(iw):
         if re.search(pattern, nm_config):
             nm_config = re.sub(pattern, f'unmanaged-devices=interface-name:{wlan};interface-name:', nm_config)
         else:
-            nm_config += f'unmanaged-devices=interface-name:{wlan};\n'
+            nm_config += f'unmanaged-devices=interface-name:{wlan}\n'
 
         with open(nm_config_file, 'w') as file:
             file.write(nm_config)
