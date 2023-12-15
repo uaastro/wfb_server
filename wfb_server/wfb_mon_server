@@ -1,0 +1,56 @@
+#!/usr/bin/python3
+
+import socket
+import struct
+import click
+import sys
+
+
+@click.command()
+@click.option('--mpkts', default=2048, help='udp max pkt size')
+@click.option('--wfbms_ip', default='127.0.0.1', help='wfb_mon_server ip def:127.0.0.1')
+@click.option('--wfbms_port', default=14550, help='wfb_mon_server port def:14550')
+@click.option('--wfbs_ip', default= '127.0.0.1', help='wfb_server ip def:127.0.0.1')
+@click.option('--wfbs_port', default=14650, help='wfb_server port def:14550')
+
+def main(mpkts,wfbms_ip,wfbms_port,wfbs_ip,wfbs_port):
+
+    def is_cl(cl_list,cl_addr):
+        res = False
+        for cl in cl_list:
+            if cl_addr == cl:
+                return True
+        return res
+
+    UDP_MAX_PKT_SIZE = mpkts
+    wfb_mon_server_ip = wfbms_ip
+    wfb_mon_server_port = wfbms_port
+    wfb_server_ip = wfbs_ip
+    wfb_server_port = wfbs_port
+    clients = []
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((wfb_mon_server_ip,wfb_mon_server_port))
+
+    print("wfb_mon_server started...")
+    print(f"wfb_server: {wfb_server_ip} : {wfb_server_port}")
+    print(f"mon_server: {wfb_mon_server_ip} : {wfb_mon_server_port}")
+
+    while True:
+        packet, addr = sock.recvfrom(UDP_MAX_PKT_SIZE) 
+        PACKET_SIZE = len(packet)
+        if (addr[0] == wfb_server_ip) and (addr[1] == wfb_server_port):
+            print(f'{addr}: {packet}')
+            for client in clients:
+                sock.sendto(packet,client)
+        else:
+            if is_cl(clients,addr):
+                print (f'{addr} is always at list')
+            else:
+                clients.append(addr)
+                print(f'{addr} added at list')
+        
+
+
+if __name__ == '__main__':
+    main()

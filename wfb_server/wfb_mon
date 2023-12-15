@@ -14,7 +14,7 @@ from rich.rule import Rule
 import click
 
 @click.command()
-@click.option('--ip', default="127.0.0.1", help='address of wfb server/default 127.0.0.1')
+@click.option('--ip', default="127.0.0.1", help='address of wfb_mon server/default 127.0.0.1')
 @click.option('--port', default=14550, help='port of wfb server/default 14550')
 @click.option('--chname', default="rx_video", help='stat channel name/default rx_video')
 @click.option('--shpkt', default="true", help='show pkt stat/default true')
@@ -25,15 +25,15 @@ def main (ip,port,chname,shpkt,shrssi):
 
     def wifi_ch_freq(channel):
         if 1 <= channel <= 13:
-            # Для каналов с 1 по 13 в 2,4 ГГц диапазоне
+            # for channels from 1 to 13 @ 2,4 GHz
             frequency = 2407 + (channel - 1) * 5
             return frequency
         elif 36 <= channel <= 165:
-            # Для каналов с 36 до 165 в диапазоне 5170-5835 МГц
+            # for channels from 36 to 165 @ 5170-5835 MHz
             frequency = 5170 + (channel - 36) * 5
             return frequency
         else:
-            return None  # Неверный номер канала
+            return None
     
     def print_status(d_pkt, d_fec_r, d_pkts, d_pkt_lost, d_d_err, d_fec_r_s, d_pkt_lost_s, d_d_err_s, d_ant_data, d_channel,d_bandwidth,d_wlans_info) -> Table:
         
@@ -45,7 +45,7 @@ def main (ip,port,chname,shpkt,shrssi):
         
         table_rssi = Table(show_header=True,highlight=
                       True,box=box.ROUNDED,expand=True) #box.ASCII2
-        
+        # Получаем данные из UDP пакета
         table_rssi.add_column("[ANT]")
         table_rssi.add_column("pkt/s",justify="right")
         table_rssi.add_column("RSSI",justify="center")
@@ -86,7 +86,7 @@ def main (ip,port,chname,shpkt,shrssi):
         table_wlan_info.add_column("wlan")
         
         if rssi_avg_max > -70:
-            rssi_color='green'
+                rssi_color='green'
         elif rssi_avg_max > -80:
             rssi_color='yellow'
         else:
@@ -143,8 +143,15 @@ def main (ip,port,chname,shpkt,shrssi):
     UDP_PORT = port
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind((UDP_IP, UDP_PORT))
-    #sock.setblocking(0) 
+    ext = False
+    while not ext:
+        try: 
+            sock.bind((UDP_IP, UDP_PORT))
+            print(f'{UDP_IP}:{UDP_PORT}')
+            ext = True
+        except:
+            UDP_PORT +=1 
+    sock.sendto(b"\xFF"*3,(ip, port))
     
     ant_data = []
     pkt = 0
@@ -179,7 +186,7 @@ def main (ip,port,chname,shpkt,shrssi):
         
         while True:
             
-            data, addr = sock.recvfrom(256)  # Получаем данные из UDP пакета
+            data, addr = sock.recvfrom(2048) 
             line = data.decode("utf-8")
             #live.console.print(line.split())
             parts = re.split(r"\s+", line)

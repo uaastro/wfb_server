@@ -11,7 +11,7 @@ import sys
 @click.option('--ip_tx', default='127.0.0.1', help='ip of destination host')
 @click.option('--port_tx', default=5700, help='port of destination host')
 @click.option('--ip_rx', default='0.0.0.0', help='ip of source host')
-@click.option('--port_rx', default=5600, help='port oof source host')
+@click.option('--port_rx', default=5600, help='port of source host')
 
 def main(mpkts,ip_tx,port_tx,ip_rx,port_rx):
 
