@@ -169,7 +169,7 @@ def main (ip,port,chname,shpkt,shrssi):
     while not ext:
         try: 
             sock.bind((UDP_IP, UDP_PORT))
-            print(f'{UDP_IP}:{UDP_PORT}')
+            #print(f'{UDP_IP}:{UDP_PORT}')
             ext = True
         except:
             UDP_PORT +=1 
