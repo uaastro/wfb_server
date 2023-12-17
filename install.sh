@@ -1,8 +1,7 @@
 #!/bin/bash
 # Install required packages
 apt update
-cp -r ./wfb_server /usr/sbin/
-cp ./wfb_server/wfb.service /etc/systemd/system/apt install python3-all python3-all-dev libpcap-dev libsodium-dev python3-pip python3-pyroute2 \
+apt install python3-all python3-all-dev libpcap-dev libsodium-dev python3-pip python3-pyroute2 \
   python3-future python3-twisted python3-serial iw virtualenv debhelper dh-python build-essential -y
 
 pip install rich
