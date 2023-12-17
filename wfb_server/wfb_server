@@ -43,7 +43,7 @@ def main(conf):
         wfb_mon_ip = '127.0.0.1'
         wfb_mon_port = 14550
         wfb_server_ip = '127.0.0.1'
-        wfb_server_port = 14550
+        wfb_server_port = 14650
     
     sock.bind((wfb_server_ip,wfb_server_port))
 
@@ -139,9 +139,10 @@ def main(conf):
             process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
             process_list.append(process)
             process_id[process.pid] = section
-        elif section[:11]=='wfb_mon_server':
+        elif section[:14]=='wfb_mon_server':
             options=config[section]
             udp_xx=[wfb_server_dir+"wfb_mon_server","--mpkts",options['wfbms_mpkts'],"--wfbms_ip",options['wfbms_wfbms_ip'],"--wfbms_port",options['wfbms_wfbms_port'],"--wfbs_ip",options['wfbms_wfbs_ip'],"--wfbs_port",options['wfbms_wfbs_port']]
+            print(udp_xx)
             process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
             process_list.append(process)
             process_id[process.pid] = section        

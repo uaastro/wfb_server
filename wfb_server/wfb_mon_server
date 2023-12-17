@@ -40,15 +40,16 @@ def main(mpkts,wfbms_ip,wfbms_port,wfbs_ip,wfbs_port):
         packet, addr = sock.recvfrom(UDP_MAX_PKT_SIZE) 
         PACKET_SIZE = len(packet)
         if (addr[0] == wfb_server_ip) and (addr[1] == wfb_server_port):
-            print(f'{addr}: {packet}')
+            #print(f'{addr}: {packet}')
             for client in clients:
                 sock.sendto(packet,client)
         else:
-            if is_cl(clients,addr):
-                print (f'{addr} is always at list')
-            else:
+            if not is_cl(clients,addr):
                 clients.append(addr)
-                print(f'{addr} added at list')
+                #print(f'{addr} added at list')
+            #else:
+                #print (f'{addr} is always at list')
+                
         
 
 

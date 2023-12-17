@@ -141,7 +141,9 @@ def main (ip,port,chname,shpkt,shrssi):
     
     UDP_IP = ip
     UDP_PORT = port
-
+    
+    msg_connect = 'wfb_mon:connect'
+    
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     ext = False
     while not ext:
@@ -151,7 +153,9 @@ def main (ip,port,chname,shpkt,shrssi):
             ext = True
         except:
             UDP_PORT +=1 
-    sock.sendto(b"\xFF"*3,(ip, port))
+
+    msg_connect+=f':{UDP_IP}:{UDP_PORT}'
+    sock.sendto(msg_connect.encode("utf-8"),(ip, port))
     
     ant_data = []
     pkt = 0
