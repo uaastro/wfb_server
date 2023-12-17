@@ -3,6 +3,7 @@
 import re
 import time
 import socket
+import threading
 
 from rich.console import Console
 from rich.theme import Theme
@@ -22,6 +23,11 @@ import click
 
 
 def main (ip,port,chname,shpkt,shrssi):
+
+    def heartbit(msg,hb_sock,hb_ip,hb_port):
+        while True:
+            hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
+            time.sleep(1)
 
     def wifi_ch_freq(channel):
         if 1 <= channel <= 13:
@@ -155,8 +161,10 @@ def main (ip,port,chname,shpkt,shrssi):
             UDP_PORT +=1 
 
     msg_connect+=f':{UDP_IP}:{UDP_PORT}'
-    sock.sendto(msg_connect.encode("utf-8"),(ip, port))
-    
+    #sock.sendto(msg_connect.encode("utf-8"),(ip, port))
+    thread_heartbit = threading.Thread(target=heartbit, args=(msg_connect,sock,ip,port))
+    thread_heartbit.start()
+
     ant_data = []
     pkt = 0
     fec_r = 0
