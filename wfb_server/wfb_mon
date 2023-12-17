@@ -4,6 +4,8 @@ import re
 import time
 import socket
 import threading
+import signal
+import sys
 
 from rich.console import Console
 from rich.theme import Theme
@@ -24,10 +26,20 @@ import click
 
 def main (ip,port,chname,shpkt,shrssi):
 
+    global exit_flag
+    exit_flag = False
+
+    def signal_handler(sig, frame):
+        global exit_flag
+        exit_flag = True
+        #print("wfb_mon terminated...")
+
     def heartbit(msg,hb_sock,hb_ip,hb_port):
-        while True:
+        global exit_flag
+        while not exit_flag:
             hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
             time.sleep(1)
+        #print("heartbit stoped...")
 
     def wifi_ch_freq(channel):
         if 1 <= channel <= 13:
@@ -148,6 +160,8 @@ def main (ip,port,chname,shpkt,shrssi):
     UDP_IP = ip
     UDP_PORT = port
     
+    signal.signal(signal.SIGINT, signal_handler)
+
     msg_connect = 'wfb_mon:connect'
     
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -196,7 +210,7 @@ def main (ip,port,chname,shpkt,shrssi):
     
     with Live(print_status(0,0,0,0,0,0,0,0,ant_data,channel,bandwidth,wlans_info), refresh_per_second=4) as live:
         
-        while True:
+        while not exit_flag:
             
             data, addr = sock.recvfrom(2048) 
             line = data.decode("utf-8")
@@ -236,3 +250,5 @@ def main (ip,port,chname,shpkt,shrssi):
             
 if __name__ == '__main__':
     main()
+
+    
