@@ -1,0 +1,76 @@
+#!/usr/bin/python3
+import socket
+import struct
+import click
+import sys
+import signal
+import time
+import threading
+
+@click.command()
+@click.option('--mpkts', default=2048, help='udp max pkt size')
+@click.option('--wfbms_ip', default='127.0.0.1', help='wfb_mon_server ip def:127.0.0.1')
+@click.option('--wfbms_port', default=14550, help='wfb_mon_server port def:14550')
+@click.option('--fwd_ip', default= '127.0.0.1', help='forward ip def:127.0.0.1')
+@click.option('--fwd_port', default=14720, help='forward port def:14720')
+@click.option('--wfbs_ip', default='127.0.0.1', help='wfb_server ip def:127.0.0.1')
+@click.option('--wfbs_port', default=14650, help='wfb_server port def:14650')
+
+def main(mpkts,wfbms_ip,wfbms_port,fwd_ip,fwd_port,wfbs_ip,wfbs_port):
+    global exit_flag
+    exit_flag = False
+
+    def signal_handler(sig, frame):
+        global exit_flag
+        exit_flag = True
+        sys.exit(0)
+
+    def heartbit(msg,hb_sock,hb_ip,hb_port):
+        global exit_flag
+        hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
+        timestamp = time.time()
+        while not exit_flag:
+            if (time.time()-timestamp) >= 1 :
+                hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
+                timestamp = time.time()
+
+    UDP_MAX_PKT_SIZE = mpkts
+    UDP_IP = wfbms_ip
+    UDP_PORT = wfbms_port
+
+    signal.signal(signal.SIGINT, signal_handler)
+
+    msg_connect = 'wfb_mon:connect'
+    
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    ext = False
+    while not ext:
+        try: 
+            sock.bind((UDP_IP, UDP_PORT))
+            ext = True
+        except:
+            UDP_PORT +=1 
+
+    msg_connect+=f':{UDP_IP}:{UDP_PORT}'
+    if not ((wfbms_ip == UDP_IP) and (wfbms_port == UDP_PORT)):
+        thread_heartbit = threading.Thread(target=heartbit, args=(msg_connect,sock,wfbms_ip,wfbms_port))
+        thread_heartbit.start()
+    else:
+        wfbms_ip = wfbs_ip
+        wfbms_port = wfbs_port
+
+    print("wfb_mon_server forwader started...")
+    print(f"wfb_mon_server: {wfbms_ip} : {wfbms_port}")
+    print(f"forwad host: {fwd_ip} : {fwd_port}")
+    print(f"forwader: {UDP_IP} : {UDP_PORT}") 
+
+    while not exit_flag:
+        packet, addr = sock.recvfrom(UDP_MAX_PKT_SIZE) 
+        PACKET_SIZE = len(packet)
+        if ((addr[0] == wfbms_ip) and (addr[1] == wfbms_port)):
+            sock.sendto(packet,(fwd_ip, fwd_port))        
+        
+
+
+if __name__ == '__main__':
+    main()
