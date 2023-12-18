@@ -32,14 +32,16 @@ def main (ip,port,chname,shpkt,shrssi):
     def signal_handler(sig, frame):
         global exit_flag
         exit_flag = True
-        #print("wfb_mon terminated...")
+        sys.exit(0)
 
     def heartbit(msg,hb_sock,hb_ip,hb_port):
         global exit_flag
+        hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
+        timestamp = time.time()
         while not exit_flag:
-            hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
-            time.sleep(1)
-        #print("heartbit stoped...")
+            if (time.time()-timestamp) >= 1 :
+                hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
+                timestamp = time.time()
 
     def wifi_ch_freq(channel):
         if 1 <= channel <= 13:
@@ -169,13 +171,11 @@ def main (ip,port,chname,shpkt,shrssi):
     while not ext:
         try: 
             sock.bind((UDP_IP, UDP_PORT))
-            #print(f'{UDP_IP}:{UDP_PORT}')
             ext = True
         except:
             UDP_PORT +=1 
 
     msg_connect+=f':{UDP_IP}:{UDP_PORT}'
-    #sock.sendto(msg_connect.encode("utf-8"),(ip, port))
     thread_heartbit = threading.Thread(target=heartbit, args=(msg_connect,sock,ip,port))
     thread_heartbit.start()
 
