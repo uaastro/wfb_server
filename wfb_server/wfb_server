@@ -33,6 +33,9 @@ def main(conf):
     process_id={}
     process_inf={}
     
+    wlans = []
+    wlans_info = ""
+    
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:    
         wfb_mon_ip = config['wfb_server']['wfb_mon_ip']
@@ -49,8 +52,6 @@ def main(conf):
 
     for section in sections:
         
-        wlans = []
-        wlans_info = ""
 
         if section[:4]=='wlan':
     
