@@ -49,6 +49,9 @@ def main(conf):
 
     for section in sections:
         
+        wlans = []
+        wlans_info = ""
+
         if section[:4]=='wlan':
     
             wlans = config[section]['wlan'].split()
