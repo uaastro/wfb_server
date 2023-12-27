@@ -3,9 +3,10 @@
 import re
 import time
 import socket
-import threading
 import signal
 import sys
+
+from multiprocessing import Process
 
 from rich.console import Console
 from rich.theme import Theme
@@ -176,8 +177,10 @@ def main (ip,port,chname,shpkt,shrssi):
             UDP_PORT +=1 
 
     msg_connect+=f':{UDP_IP}:{UDP_PORT}'
-    thread_heartbit = threading.Thread(target=heartbit, args=(msg_connect,sock,ip,port))
-    thread_heartbit.start()
+    if not ((UDP_IP == ip) and (UDP_PORT == port)):
+        thread_heartbit = Process(target=heartbit, args=(msg_connect,sock,ip,port))
+        thread_heartbit.start()
+        
 
     ant_data = []
     pkt = 0
