@@ -6,15 +6,39 @@ import configparser
 import select
 import socket
 import os
+import signal
 import sys
 import logging
+import time
 
 @click.command()
 @click.option('--conf', default="wfb_server.cfg", help='path to config file')
 
 def main(conf):
     
+    global process_list
+    process_list = []
+
+    def subprocess_kill(pl):
+        if pl != None:
+            for p in pl:
+                try:
+                    p.terminate()
+                    print('process was terminated: ', p)
+                except: 
+                    pass
+        pl.clear()
+        return pl
+
+    def signal_handler(sig, frame):
+        global exit_flag
+        global process_list
+        exit_flag = True
+        subprocess_kill(process_list)
+        print ('wfb_server was terminated...')
+        sys.exit(1)
     
+    signal.signal(signal.SIGINT, signal_handler)
     wfb_server_dir = os.path.dirname(os.path.abspath(__file__))+"/"
     conf = wfb_server_dir+conf
     config = configparser.ConfigParser()
@@ -25,11 +49,10 @@ def main(conf):
     level=logging.INFO,
     format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     filename = wfb_server_dir+'wfb_server.log',
-    filemode = 'w')  # Режим записи в файл (append)
+    filemode = 'w')  #append mode
     
     logging.info("starting wfb-server...")
     
-    process_list = []
     process_id={}
     process_inf={}
     
@@ -49,135 +72,140 @@ def main(conf):
         wfb_server_port = 14650
     
     sock.bind((wfb_server_ip,wfb_server_port))
+    try:
 
-    for section in sections:
+        for section in sections:
+            
+
+            if section[:4]=='wlan':
         
+                wlans = config[section]['wlan'].split()
+                channel = config[section]['channel']
+                bandwidth = config[section]['bandwidth']
+                bw_pf = config[section]['bw_pf']
+                wlans_info='INF '+channel+' '+bandwidth+' '
+                wlans_idx=0
+                wlans_str=''
 
-        if section[:4]=='wlan':
-    
-            wlans = config[section]['wlan'].split()
-            channel = config[section]['channel']
-            bandwidth = config[section]['bandwidth']
-            bw_pf = config[section]['bw_pf']
-            wlans_info='INF '+channel+' '+bandwidth+' '
-            wlans_idx=0
-            wlans_str=''
+                for wlan in wlans:
+                    wlans_idx+=1
+                    wlans_str+=':'+wlan
+                    subprocess.run(f"ifconfig {wlan} down",shell=True, check=True)
 
-            for wlan in wlans:
-                wlans_idx+=1
-                wlans_str+=':'+wlan
-                subprocess.run(f"ifconfig {wlan} down",shell=True, check=True)
+                    subprocess.run(f"iw dev {wlan} set monitor otherbss",shell=True, check=True)
 
-                subprocess.run(f"iw dev {wlan} set monitor otherbss",shell=True, check=True)
+                    subprocess.run(f"iw reg set US",shell=True, check=True)
 
-                subprocess.run(f"iw reg set US",shell=True, check=True)
-
-                subprocess.run(f"ifconfig {wlan} up",shell=True, check=True)
+                    subprocess.run(f"ifconfig {wlan} up",shell=True, check=True)
+                    
+                    subprocess.run(f"iw dev {wlan} set channel {channel} HT{bandwidth}{bw_pf}",shell=True, check=True)
                 
-                subprocess.run(f"iw dev {wlan} set channel {channel} HT{bandwidth}{bw_pf}",shell=True, check=True)
-            
-            wlans_info+=f"{wlans_idx}{wlans_str}"
+                wlans_info+=f"{wlans_idx}{wlans_str}"
 
-        elif section[:2]=='tx':
-            options=config[section]
-            wfb_xx=["/usr/bin/wfb_tx","-p",options['radio_port'],"-u",options['udp_port'],"-K",options['tx_key'],"-B",options['bandwidth'],"-G",options['G_guard_interval'],"-S",
-                    options['S_stbc'],"-L",options['L_ldpc'],"-M",options['M_mcs_index'],"-k",options['k_RS_K'],"-n",options['n_RS_N'],"-T",options['T_poll_timeout'],
-                    "-i",options['i_link_id']] + wlans
-            process=subprocess.Popen(wfb_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
-            process_list.append(process)
-            process_id[process.pid] = section
-            process_inf[process.pid] = wlans_info
-            
-        elif section[:2]=='rx':
-            options=config[section]
-            wfb_xx=["/usr/bin/wfb_rx","-p",options['radio_port'],"-c",options['ip'],"-u",options['udp_port'],"-K",options['rx_key'],"-i",options['i_link_id']]+ wlans
-            process=subprocess.Popen(wfb_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
-            process_list.append(process)
-            process_id[process.pid] = section
-            process_inf[process.pid] = wlans_info
-            
-        elif section[:6]=='udp_tx':
-            options=config[section]
-            udp_xx=[wfb_server_dir+"udp_tx","--ip",options['udp_tx_ip'],"--port",options['udp_tx_port'],"--pksize",options['udp_tx_pksize'],"--pks",options['udp_tx_pks'],"--lid",options['udp_tx_lid']]
-            process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
-            process_list.append(process)
-            process_id[process.pid] = section
-            
-        elif section[:12]=='udp_proxy_tx':
-            options=config[section]
-            udp_xx=[wfb_server_dir+"udp_proxy_tx","--ip_tx",options['uptx_ip_tx'],"--port_tx",options['uptx_port_tx'],"--ip_rx",options['uptx_ip_rx'],"--port_rx",options['uptx_port_rx'],"--mpkts",options['uptx_mpkts'],"--ptxn",options['uptx_ptxn']]
-            process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
-            process_list.append(process)
-            process_id[process.pid] = section
-            
-        elif section[:12]=='udp_proxy_rx':
-            options=config[section]
-            udp_xx=[wfb_server_dir+"udp_proxy_rx","--ip_tx",options['uprx_ip_tx'],"--port_tx",options['uprx_port_tx'],"--ip_rx",options['uprx_ip_rx'],"--port_rx",options['uprx_port_rx'],"--mpkts",options['uprx_mpkts']]
-            process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
-            process_list.append(process)
-            process_id[process.pid] = section
+            elif section[:2]=='tx':
+                options=config[section]
+                wfb_xx=["/usr/bin/wfb_tx","-p",options['radio_port'],"-u",options['udp_port'],"-K",options['tx_key'],"-B",options['bandwidth'],"-G",options['G_guard_interval'],"-S",
+                        options['S_stbc'],"-L",options['L_ldpc'],"-M",options['M_mcs_index'],"-k",options['k_RS_K'],"-n",options['n_RS_N'],"-T",options['T_poll_timeout'],
+                        "-i",options['i_link_id']] + wlans
+                process=subprocess.Popen(wfb_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
+                process_inf[process.pid] = wlans_info
+                
+            elif section[:2]=='rx':
+                options=config[section]
+                wfb_xx=["/usr/bin/wfb_rx","-p",options['radio_port'],"-c",options['ip'],"-u",options['udp_port'],"-K",options['rx_key'],"-i",options['i_link_id']]+ wlans
+                process=subprocess.Popen(wfb_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
+                process_inf[process.pid] = wlans_info
+                
+            elif section[:6]=='udp_tx':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"udp_tx","--ip",options['udp_tx_ip'],"--port",options['udp_tx_port'],"--pksize",options['udp_tx_pksize'],"--pks",options['udp_tx_pks'],"--lid",options['udp_tx_lid']]
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
+                
+            elif section[:12]=='udp_proxy_tx':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"udp_proxy_tx","--ip_tx",options['uptx_ip_tx'],"--port_tx",options['uptx_port_tx'],"--ip_rx",options['uptx_ip_rx'],"--port_rx",options['uptx_port_rx'],"--mpkts",options['uptx_mpkts'],"--ptxn",options['uptx_ptxn']]
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
+                
+            elif section[:12]=='udp_proxy_rx':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"udp_proxy_rx","--ip_tx",options['uprx_ip_tx'],"--port_tx",options['uprx_port_tx'],"--ip_rx",options['uprx_ip_rx'],"--port_rx",options['uprx_port_rx'],"--mpkts",options['uprx_mpkts']]
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
 
-        elif section[:11]=='rz_mavproxy':
-            options=config[section]
-            udp_xx=[wfb_server_dir+"rz_mavproxy"]
-            process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
-            process_list.append(process)
-            process_id[process.pid] = section
+            elif section[:11]=='rz_mavproxy':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"rz_mavproxy"]
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
 
-        elif section[:14]=='mav_router_dwn':
-            options=config[section]
-            udp_xx=[wfb_server_dir+"mav_router_dwn"]
-            process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
-            process_list.append(process)
-            process_id[process.pid] = section
+            elif section[:14]=='mav_router_dwn':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"mav_router_dwn"]
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
 
-        elif section[:13]=='mav_router_up':
-            options=config[section]
-            udp_xx=[wfb_server_dir+"mav_router_up"]
-            process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
-            process_list.append(process)
-            process_id[process.pid] = section
-        elif section[:11]=='uart_to_udp':
-            options=config[section]
-            udp_xx=[wfb_server_dir+"uart_to_udp","--uart",options['uart'],"--brate",options['brate'],"--udps_port",options['udps_port']]
-            process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
-            process_list.append(process)
-            process_id[process.pid] = section
-        elif section[:14]=='wfb_mon_server':
-            options=config[section]
-            udp_xx=[wfb_server_dir+"wfb_mon_server","--mpkts",options['wfbms_mpkts'],"--wfbms_ip",options['wfbms_wfbms_ip'],"--wfbms_port",options['wfbms_wfbms_port'],"--wfbs_ip",options['wfbms_wfbs_ip'],"--wfbs_port",options['wfbms_wfbs_port']]
-            print(udp_xx)
-            process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
-            process_list.append(process)
-            process_id[process.pid] = section        
+            elif section[:13]=='mav_router_up':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"mav_router_up"]
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
+            elif section[:11]=='uart_to_udp':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"uart_to_udp","--uart",options['uart'],"--brate",options['brate'],"--udps_port",options['udps_port']]
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
+            elif section[:14]=='wfb_mon_server':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"wfb_mon_server","--mpkts",options['wfbms_mpkts'],"--wfbms_ip",options['wfbms_wfbms_ip'],"--wfbms_port",options['wfbms_wfbms_port'],"--wfbs_ip",options['wfbms_wfbs_ip'],"--wfbs_port",options['wfbms_wfbs_port']]
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section        
 
-    ext=False
+        ext=False
 
-    fd_list = [process.stdout.fileno() for process in process_list]
-    logging.info("wfb-server started")
+        fd_list = [process.stdout.fileno() for process in process_list]
+        logging.info("wfb-server started")
 
-    while ext is False:
-        readable, _, _ = select.select(fd_list, [], [])
-        for fd in readable:
-            for process in process_list:
-                return_code = process.poll()
-                if return_code is not None:
-                    if return_code != 0:
-                        print(f"[{process_id[process.pid]}] error! return code: {return_code}")
-                        logging.error(f"[{process_id[process.pid]}] error! return code: {return_code}")
-                        sys.exit(return_code)
-                if process.stdout.fileno() == fd:
-                    output = process.stdout.readline()
-                    if output:
-                        print(f"[{process_id[process.pid]}]", output.strip())
-                        print(f"[{process_id[process.pid]}]", process_inf[process.pid],'\n')
-                        output_inf = process_id[process.pid] + ' '+ process_inf[process.pid]
-                        sock.sendto(output_inf.encode("utf-8"), (wfb_mon_ip, wfb_mon_port))
-                        output = process_id[process.pid] + ' '+ output
-                        sock.sendto(output.encode("utf-8"), (wfb_mon_ip, wfb_mon_port))
+        while ext is False:
+            readable, _, _ = select.select(fd_list, [], [])
+            for fd in readable:
+                for process in process_list:
+                    return_code = process.poll()
+                    if return_code is not None:
+                        if return_code != 0:
+                            print(f"[{process_id[process.pid]}] error! return code: {return_code}")
+                            logging.error(f"[{process_id[process.pid]}] error! return code: {return_code}")
+                            subprocess_kill(process_list)
+                            print ('wfb_server was terminated...')
+                            sys.exit(return_code)
+                    if process.stdout.fileno() == fd:
+                        output = process.stdout.readline()
+                        if output:
+                            print(f"[{process_id[process.pid]}]", output.strip())
+                            print(f"[{process_id[process.pid]}]", process_inf[process.pid],'\n')
+                            output_inf = process_id[process.pid] + ' '+ process_inf[process.pid]
+                            sock.sendto(output_inf.encode("utf-8"), (wfb_mon_ip, wfb_mon_port))
+                            output = process_id[process.pid] + ' '+ output
+                            sock.sendto(output.encode("utf-8"), (wfb_mon_ip, wfb_mon_port))
+    except Exception as e:
+        print(e)
+        subprocess_kill(process_list)
+        print ('wfb_server was terminated...')
+        
                         
-
-
-
 if __name__ == '__main__':
     main()
+
