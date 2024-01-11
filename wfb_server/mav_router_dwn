@@ -1,22 +1,20 @@
 #!/usr/bin/python3
 
 import socket
-#import serial
+import serial
 import time
 
 UDP_IP_ROUTER = "0.0.0.0"
 UDP_PORT_ROUTER = 14785
 
-UDP_IP_ALFA = "192.168.144.75"
-UDP_PORT_ALFA = 14700
-
 UDP_IP_MP = "192.168.144.100"
 UDP_PORT_MP = 14500
 
-UDP_PORT_MRU = 14785
 UDP_IP_MRU = "192.168.144.125"
+UDP_PORT_MRU = 14785
 
-time_int = 1 
+# --- stat info
+#time_int = 1 
 
 print ("mav_router_dwn initialization...\n")
 # main loop for try...except
@@ -24,32 +22,32 @@ while True:
     try:
         sock_proxy = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock_proxy.bind((UDP_IP_ROUTER, UDP_PORT_ROUTER))
-        print(f"router: {UDP_IP_ROUTER}:{UDP_PORT_ROUTER}")
-        print(f"telem source: {UDP_IP_ALFA}:{UDP_PORT_ALFA}")
-        print(f"command line: {UDP_IP_MRU}:{UDP_PORT_MRU}")
         print ("socket... ok\n")
         print ("mav_router_dwn loop starting...")
-        pkt_alfa = 0
-        pkt_gs = 0
-        time_ls = time.time()
+        # --- stat info
+        #pkt_alfa = 0
+        #pkt_gs = 0
+        #time_ls = time.time()
         
         while True:
             data, addr = sock_proxy.recvfrom(2048)
-            #print(addr)
 
             if addr[0] == UDP_IP_MP:
                 sock_proxy.sendto(data, (UDP_IP_MRU, UDP_PORT_MRU))
-                pkt_gs +=1
-            elif (addr[0] == UDP_IP_ALFA) or (addr[0] == "127.0.0.1"):
+        # --- stat info
+        #        pkt_gs +=1
+            else:
                 sock_proxy.sendto(data, (UDP_IP_MP, UDP_PORT_MP))
-                pkt_alfa +=1
+        # --- stat info
+        #        pkt_alfa +=1
             
-            if (time.time() - time_ls) >= time_int:
-                print(f"alfa: {pkt_alfa} pkt/s")
-                print(f"mp: {pkt_gs} pkt/s")
-                pkt_alfa = 0
-                pkt_gs = 0
-                time_ls = time.time()
+        # --- stat info
+        #    if (time.time() - time_ls) >= time_int:
+        #        print(f"alfa: {pkt_alfa} pkt/s")
+        #        print(f"gs: {pkt_gs} pkt/s")
+        #        pkt_alfa = 0
+        #        pkt_gs = 0
+        #        time_ls = time.time()
                 
     except Exception as e:
         print(f"error: {e}")

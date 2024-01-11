@@ -4,35 +4,26 @@ import socket
 import serial
 import time
 
-UDP_IP_PROXY = "0.0.0.0"
+UDP_IP_PROXY = "192.168.144.75"
 UDP_PORT_PROXY = 14775
 
-UDP_IP_ALFA = "192.168.144.75"
-UDP_PORT_ALFA = 14700
+UDP_IP_MvPr = "192.168.144.50"
+UDP_PORT_MvPr = 14550
 
-#UDP_IP_GS = "192.168.144.25"
-#UDP_PORT_GS = 14725
+# UART CONF
+UART_PORT_1 = '/dev/ttyS0' 
+UART_BAUDRATE_1 = 115200
 
-#UDP_IP_MP = "192.168.144.50"
-#UDP_PORT_MP = 14750
+UART_PORT_2 = '/dev/ttyS4'
+UART_BAUDRATE_2 = 115200
 
-UDP_IP_MvPr = "192.168.144.100"
-UDP_PORT_MvPr = 14500
-
-# Настройки UART
-UART_PORT_1 = '/dev/ttyS0'  # Путь к порту UART
-UART_BAUDRATE_1 = 115200  # Скорость обмена данными
-
-UART_PORT_2 = '/dev/ttyS4'  # Путь к порту UART
-UART_BAUDRATE_2 = 115200  # Скорость обмена данными
-
-time_int = 1
+# --- stat info
+#time_int = 1
 
 print ("Proxy initialization...\n")
 # main loop for try...except
 while True:
     try:
-        # Подключение к UART
         ser_1 = serial.Serial(UART_PORT_1, UART_BAUDRATE_1)
         ser_2 = serial.Serial(UART_PORT_2, UART_BAUDRATE_2)
         print ("Serial ports... ok")
@@ -40,30 +31,31 @@ while True:
         sock_proxy.bind((UDP_IP_PROXY, UDP_PORT_PROXY))
         print ("Proxy socket... ok\n")
         print ("Proxy loop starting...")
-        pkt_alfa = 0
-        pkt_gs = 0
-        time_ls = time.time()
+        # for stat info
+        #pkt_alfa = 0
+        #pkt_gs = 0
+        #time_ls = time.time()
         
         while True:
-            data, addr = sock_proxy.recvfrom(2048)  # Принимаем пакет и получаем адрес отправителя
-            #print(addr)
+            data, addr = sock_proxy.recvfrom(2048)
 
             if addr[0] == UDP_IP_MvPr:
-                #print ("=== MavProxy ===")
                 ser_1.write(data)
                 ser_2.write(data)
-                pkt_gs +=1
-            elif (addr[0] == UDP_IP_ALFA) or (addr[0] == "127.0.0.1"):
-                #print ("=== ALFA ===")
+        # --- stat info    
+        #        pkt_gs +=1
+            else:
                 sock_proxy.sendto(data, (UDP_IP_MvPr, UDP_PORT_MvPr))
-                pkt_alfa +=1
+        # --- stat info    
+        #        pkt_alfa +=1
             
-            if (time.time() - time_ls) >= time_int:
-                #print(f"alfa: {pkt_alfa} pkt/s")
-                #print(f"gs: {pkt_gs} pkt/s")
-                pkt_alfa = 0
-                pkt_gs = 0
-                time_ls = time.time()
+        # --- stat info
+        #    if (time.time() - time_ls) >= time_int:
+        #        print(f"alfa: {pkt_alfa} pkt/s")
+        #        print(f"gs: {pkt_gs} pkt/s")
+        #        pkt_alfa = 0
+        #        pkt_gs = 0
+        #        time_ls = time.time()
                 
     except Exception as e:
         print(f"error: {e}")
