@@ -2,33 +2,42 @@
 
 import socket
 import serial
-import time
-
-UDP_IP_ROUTER = "0.0.0.0"
-UDP_PORT_ROUTER = 14785
-
-UART_PORT_1 = '/dev/ttyS0'  
-UART_BAUDRATE_1 = 115200  
-
-UART_PORT_2 = '/dev/ttyS4'  
-UART_BAUDRATE_2 = 115200  
+import click
 
 # --- stat info
-#time_int = 1
+#import time
 
-print ("mav_router_up initialization...\n")
-# main loop for try...except
-while True:
+@click.command()
+@click.option('--port_r', default=14785, help='mav_router_tx port')
+@click.option('--ip_r', default='0.0.0.0', help='mav_router_tx ip')
+
+def main(port_r,ip_r):
+
+    UDP_IP_ROUTER = ip_r
+    UDP_PORT_ROUTER = port_r
+
+    UART_PORT_1 = '/dev/ttyS0'  
+    UART_BAUDRATE_1 = 115200  
+
+    UART_PORT_2 = '/dev/ttyS4'  
+    UART_BAUDRATE_2 = 115200  
+
+    # --- stat info
+    #time_int = 1
+
+    print ("mav_router_tx initialization...\n")
+
     try:
-
         ser_1 = serial.Serial(UART_PORT_1, UART_BAUDRATE_1)
         ser_2 = serial.Serial(UART_PORT_2, UART_BAUDRATE_2)
         print ("serial ports... ok")
         sock_proxy = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock_proxy.bind((UDP_IP_ROUTER, UDP_PORT_ROUTER))
         print ("socket... ok\n")
-        print ("mav_router_up loop starting...")
+        print ("mav_router_tx loop starting...\n")
         # --- stat info
+        print (f'UDP_IP_ROUTER: {UDP_IP_ROUTER}')
+        print (f'UDP_PORT_ROUTER: {UDP_PORT_ROUTER}\n')
         #pkt_alfa = 0
         #pkt_gs = 0
         #time_ls = time.time()
@@ -48,6 +57,6 @@ while True:
                 
     except Exception as e:
         print(f"error: {e}")
-        time.sleep(1)
-        
-        
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,76 @@
+#!/usr/bin/python3
+
+import socket
+import click
+
+# --- stat info
+#import time
+
+@click.command()
+@click.option('--port_r', default=14785, help='mav_router_rx port')
+@click.option('--ip_r', default='0.0.0.0', help='mav_router_rx ip')
+@click.option('--port_mp', default=14500, help='misson planer port')
+@click.option('--ip_mp', default='192.168.144.100', help='mission planer ip')
+@click.option('--ip_rtx', default='192.168.144.125', help='mav_router_tx ip')
+@click.option('--port_rtx', default=14785, help='mav_router_tx port')
+
+def main(port_r,ip_r,port_mp,ip_mp,ip_rtx,port_rtx):
+
+    UDP_IP_ROUTER = ip_r
+    UDP_PORT_ROUTER = port_r
+
+    UDP_IP_MP = ip_mp
+    UDP_PORT_MP = port_mp
+
+    UDP_IP_MR_TX = ip_rtx
+    UDP_PORT_MR_TX = port_rtx
+
+    # --- stat info
+    #time_int = 1 
+
+    print ("mav_router_rx initialization...\n")
+
+    # --- stat info
+    print(f"UDP_IP_ROUTER: {UDP_IP_ROUTER}")
+    print(f"UDP_PORT_ROUTER: {UDP_PORT_ROUTER}\n")
+    
+    print(f"UDP_IP_MP: {UDP_IP_MP}")
+    print(f"UDP_PORT_MP: {UDP_PORT_MP}\n")
+
+    print(f"UDP_IP_MR_TX: {UDP_IP_MR_TX}")
+    print(f"UDP_PORT_MR_TX: {UDP_PORT_MR_TX}\n")
+    try:
+        sock_proxy = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock_proxy.bind((UDP_IP_ROUTER, UDP_PORT_ROUTER))
+        print ("socket... ok\n")
+        print ("mav_router_rx loop starting...\n")
+        # --- stat info
+        #pkt_alfa = 0
+        #pkt_gs = 0
+        #time_ls = time.time()
+        
+        while True:
+            data, addr = sock_proxy.recvfrom(2048)
+
+            if addr[0] == UDP_IP_MP:
+                sock_proxy.sendto(data, (UDP_IP_MR_TX, UDP_PORT_MR_TX))
+        # --- stat info
+        #        pkt_gs +=1
+            else:
+                sock_proxy.sendto(data, (UDP_IP_MP, UDP_PORT_MP))
+        # --- stat info
+        #        pkt_alfa +=1
+            
+        # --- stat info
+        #    if (time.time() - time_ls) >= time_int:
+        #        print(f"alfa: {pkt_alfa} pkt/s")
+        #        print(f"gs: {pkt_gs} pkt/s")
+        #        pkt_alfa = 0
+        #        pkt_gs = 0
+        #        time_ls = time.time()
+                
+    except Exception as e:
+        print(f"error: {e}")
+
+if __name__ == '__main__':
+    main()
