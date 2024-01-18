@@ -147,6 +147,7 @@ def main(conf):
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
+
             # this section will be remove in next version use mav_router_rx
             elif section[:14]=='mav_router_dwn':
                 options=config[section]
@@ -161,29 +162,31 @@ def main(conf):
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
+
             elif section[:11]=='uart_to_udp':
                 options=config[section]
                 udp_xx=[wfb_server_dir+"uart_to_udp","--uart",options['uart'],"--brate",options['brate'],"--udps_port",options['udps_port']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
+
             elif section[:14]=='wfb_mon_server':
                 options=config[section]
                 udp_xx=[wfb_server_dir+"wfb_mon_server","--mpkts",options['wfbms_mpkts'],"--wfbms_ip",options['wfbms_wfbms_ip'],"--wfbms_port",options['wfbms_wfbms_port'],"--wfbs_ip",options['wfbms_wfbs_ip'],"--wfbs_port",options['wfbms_wfbs_port']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
-                process_id[process.pid] = section        
+                process_id[process.pid] = section 
+
             elif section[:13]=='mav_router_rx':
                 options=config[section]
                 udp_xx=[wfb_server_dir+"mav_router_rx","--ip_r",options['mvrrx_ip_r'],"--port_r",options['mvrrx_port_r'],"--ip_mp",options['mvrrx_ip_mp'],"--port_mp",options['mvrrx_port_mp'],"--ip_rtx",options['mvrrx_ip_rtx'],"--port_rtx",options['mvrrx_port_rtx']]
-                print(udp_xx)               
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
+                
             elif section[:13]=='mav_router_tx':
                 options=config[section]
                 udp_xx=[wfb_server_dir+"mav_router_tx","--ip_r",options['mvrtx_ip_r'],"--port_r",options['mvrtx_port_r']]
-                print(udp_xx)
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
