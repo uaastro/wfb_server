@@ -9,5 +9,6 @@ import rich
 def main(wfb_cfg,cfg):
     #print(psutil.net_connections('udp'))
     rich.print(psutil.net_if_addrs())
+    
 if __name__ == '__main__':
     main()
