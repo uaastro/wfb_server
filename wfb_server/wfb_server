@@ -36,7 +36,7 @@ def main(conf):
         exit_flag = True
         subprocess_kill(process_list)
         print ('wfb_server was terminated...')
-        sys.exit(1)
+        sys.exit(0)
     
     signal.signal(signal.SIGINT, signal_handler)
     wfb_server_dir = os.path.dirname(os.path.abspath(__file__))+"/"
@@ -183,7 +183,7 @@ def main(conf):
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
-                
+
             elif section[:13]=='mav_router_tx':
                 options=config[section]
                 udp_xx=[wfb_server_dir+"mav_router_tx","--ip_r",options['mvrtx_ip_r'],"--port_r",options['mvrtx_port_r']]
@@ -207,7 +207,7 @@ def main(conf):
                             logging.error(f"[{process_id[process.pid]}] error! return code: {return_code}")
                             subprocess_kill(process_list)
                             print ('wfb_server was terminated...')
-                            sys.exit(return_code)
+                            sys.exit(0)
                     if process.stdout.fileno() == fd:
                         output = process.stdout.readline()
                         if output:
@@ -221,6 +221,7 @@ def main(conf):
         print(e)
         subprocess_kill(process_list)
         print ('wfb_server was terminated...')
+        sys.exit(0)
         
                         
 if __name__ == '__main__':
