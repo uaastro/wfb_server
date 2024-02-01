@@ -6,6 +6,7 @@ apt install python3-all python3-all-dev libpcap-dev libsodium-dev python3-pip py
 
 pip install rich
 pip install click
+pip install commented-configparser
 
 # Build
 make
