@@ -35,7 +35,7 @@ def main(wfb_cfg, prfx, channel, wlans_nmbr, wlan_section):
         wlans += wlans_list[wlan_idx]
 
     config[wlan_section]['wlan'] = wlans
-    config[wlan_section]['channel'] = channel
+    #config[wlan_section]['channel'] = channel
 
     with open(wfb_cfg,'w') as configfile:
         config.write(configfile)
