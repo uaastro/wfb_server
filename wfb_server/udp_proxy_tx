@@ -12,8 +12,9 @@ import click
 @click.option('--ip_tx', default='127.0.0.1', help='ip of destination host def: 127.0.0.1')
 @click.option('--port_tx', default=5680, help='first port of destination hosts def: 5680')
 @click.option('--ptxn', default=1, help='numder of tx ports [port_tx+1...port_tx+n] def: 1')
+@click.option('--rpn', default=1, help='numder of repeats for each tx ports def: 1')
 
-def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn):
+def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn,rpn):
     
     UDP_MAX_PKT_SIZE = mpkts
     UDP_IP_RX= ip_rx
@@ -39,6 +40,8 @@ def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn):
 
     for udp_stream in udp_streams:
         print(f'tx: {udp_stream["ip"]} : {udp_stream["port"]}')
+    
+    print(f"rpn: {rpn}")
 
     while True:
         
@@ -48,7 +51,8 @@ def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn):
         packet = struct.pack("!II"+str(PACKET_SIZE)+"s", link_id, pkt_num, data)
         
         for udp_stream in udp_streams:
-            sock_tx.sendto(packet, (udp_stream["ip"], udp_stream["port"]))
+            for k in range(rpn):
+                sock_tx.sendto(packet, (udp_stream["ip"], udp_stream["port"]))
 
 
 if __name__ == '__main__':

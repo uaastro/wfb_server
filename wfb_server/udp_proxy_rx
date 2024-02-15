@@ -4,6 +4,7 @@ import socket
 import struct
 import click
 import sys
+import time
 
 
 @click.command()
@@ -26,6 +27,9 @@ def main(mpkts,ip_tx,port_tx,ip_rx,port_rx):
     pkt_num = 0
     rs_alrt = 0
     rs_alrt_max = 10
+    pkt_lost=0
+    pkts = 0
+    time_stamp=time.time()
 
     sock_rx= socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock_rx.bind((UDP_IP_RX,UDP_PORT_RX))
@@ -44,6 +48,10 @@ def main(mpkts,ip_tx,port_tx,ip_rx,port_rx):
         if packet_number > pkt_num:
             sock_tx.sendto(data,(UDP_IP_TX, UDP_PORT_TX))
             #print (addr,' pkt_num: ',pkt_num," packet_number: ",packet_number)
+            #stat data:
+            pkt_lost+=packet_number-pkt_num-1
+            pkts+=1
+            #---------------------------------
             pkt_num=packet_number
             rs_alrt=0
         else:
@@ -51,6 +59,10 @@ def main(mpkts,ip_tx,port_tx,ip_rx,port_rx):
             if rs_alrt >= rs_alrt_max:
                 pkt_num=packet_number
                 rs_alrt = 0
+        if (time.time() - time_stamp) >= 1:
+            #print(f"pkt/s: {pkts} pkt_lost: {pkt_lost}")
+            pkt_lost = 0
+            pkts = 0
 
 if __name__ == '__main__':
     main()
