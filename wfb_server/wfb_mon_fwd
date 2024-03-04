@@ -5,7 +5,7 @@ import click
 import sys
 import signal
 import time
-import threading
+from multiprocessing import Process
 
 @click.command()
 @click.option('--mpkts', default=2048, help='udp max pkt size')
@@ -53,7 +53,7 @@ def main(mpkts,wfbms_ip,wfbms_port,fwd_ip,fwd_port,wfbs_ip,wfbs_port):
 
     msg_connect+=f':{UDP_IP}:{UDP_PORT}'
     if not ((wfbms_ip == UDP_IP) and (wfbms_port == UDP_PORT)):
-        thread_heartbit = threading.Thread(target=heartbit, args=(msg_connect,sock,wfbms_ip,wfbms_port))
+        thread_heartbit = Process(target=heartbit, args=(msg_connect,sock,wfbms_ip,wfbms_port))
         thread_heartbit.start()
     else:
         wfbms_ip = wfbs_ip

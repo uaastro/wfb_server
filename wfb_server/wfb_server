@@ -10,6 +10,7 @@ import signal
 import sys
 import logging
 import time
+from multiprocessing import Process
 
 @click.command()
 @click.option('--conf', default="wfb_server.cfg", help='path to config file')
@@ -17,9 +18,16 @@ import time
 def main(conf):
     
     global process_list
+    global exit_flag
+    global process_heartbit
+
+    exit_flag = False
     process_list = []
 
     def subprocess_kill(pl):
+        global process_heartbit
+        if process_heartbit != None:
+            process_heartbit.terminate()
         if pl != None:
             for p in pl:
                 try:
@@ -37,6 +45,12 @@ def main(conf):
         subprocess_kill(process_list)
         print ('wfb_server was terminated...')
         sys.exit(0)
+    
+    def heartbit(hb_sock,hb_wfb_server_ip,hb_wfb_server_port,hb_wfb_mon_ip,hb_wfb_mon_port):
+        global exit_flag
+        while not exit_flag:
+            data, addr = sock.recvfrom(2048)
+            sock.sendto(data, (hb_wfb_mon_ip, hb_wfb_mon_port))
     
     signal.signal(signal.SIGINT, signal_handler)
     wfb_server_dir = os.path.dirname(os.path.abspath(__file__))+"/"
@@ -72,6 +86,8 @@ def main(conf):
         wfb_server_port = 14650
     
     sock.bind((wfb_server_ip,wfb_server_port))
+    process_heartbit = Process(target=heartbit, args=(sock,wfb_server_ip,wfb_server_port,wfb_mon_ip,wfb_mon_port))
+    process_heartbit.start()
     try:
 
         for section in sections:
@@ -136,6 +152,7 @@ def main(conf):
                 
             elif section[:12]=='udp_proxy_rx':
                 options=config[section]
+                #need to add wfb_server ip and port!!!!!!!
                 udp_xx=[wfb_server_dir+"udp_proxy_rx","--ip_tx",options['uprx_ip_tx'],"--port_tx",options['uprx_port_tx'],"--ip_rx",options['uprx_ip_rx'],"--port_rx",options['uprx_port_rx'],"--mpkts",options['uprx_mpkts']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
@@ -144,21 +161,6 @@ def main(conf):
             elif section[:11]=='rz_mavproxy':
                 options=config[section]
                 udp_xx=[wfb_server_dir+"rz_mavproxy"]
-                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
-                process_list.append(process)
-                process_id[process.pid] = section
-
-            # this section will be remove in next version use mav_router_rx
-            elif section[:14]=='mav_router_dwn':
-                options=config[section]
-                udp_xx=[wfb_server_dir+"mav_router_dwn"]
-                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
-                process_list.append(process)
-                process_id[process.pid] = section
-            # this section will be remove in next version use mav_router_tx
-            elif section[:13]=='mav_router_up':
-                options=config[section]
-                udp_xx=[wfb_server_dir+"mav_router_up"]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -200,7 +202,7 @@ def main(conf):
         fd_list = [process.stdout.fileno() for process in process_list]
         logging.info("wfb-server started")
 
-        while ext is False:
+        while exit_flag is False:
             readable, _, _ = select.select(fd_list, [], [])
             for fd in readable:
                 for process in process_list:
@@ -211,6 +213,7 @@ def main(conf):
                             logging.error(f"[{process_id[process.pid]}] error! return code: {return_code}")
                             subprocess_kill(process_list)
                             print ('wfb_server was terminated...')
+                            exit_flag = True
                             sys.exit(0)
                     if process.stdout.fileno() == fd:
                         output = process.stdout.readline()
@@ -225,6 +228,7 @@ def main(conf):
         print(e)
         subprocess_kill(process_list)
         print ('wfb_server was terminated...')
+        exit_flag = True
         sys.exit(0)
         
                         
