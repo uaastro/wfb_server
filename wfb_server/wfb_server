@@ -28,6 +28,7 @@ def main(conf):
         global process_heartbit
         if process_heartbit != None:
             process_heartbit.terminate()
+            print('process was terminated: ', process_heartbit)
         if pl != None:
             for p in pl:
                 try:
@@ -212,9 +213,9 @@ def main(conf):
                         if return_code != 0:
                             print(f"[{process_id[process.pid]}] error! return code: {return_code}")
                             logging.error(f"[{process_id[process.pid]}] error! return code: {return_code}")
+                            exit_flag = True
                             subprocess_kill(process_list)
                             print ('wfb_server was terminated...')
-                            exit_flag = True
                             sys.exit(0)
                     if process.stdout.fileno() == fd:
                         output = process.stdout.readline()
@@ -227,9 +228,9 @@ def main(conf):
                             sock.sendto(output.encode("utf-8"), (wfb_mon_ip, wfb_mon_port))
     except Exception as e:
         print(e)
+        exit_flag = True
         subprocess_kill(process_list)
         print ('wfb_server was terminated...')
-        exit_flag = True
         sys.exit(0)
         
                         
