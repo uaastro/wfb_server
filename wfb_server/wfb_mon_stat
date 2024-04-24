@@ -141,7 +141,7 @@ def main (ip,port,chname,shpkt,shrssi):
         table_wlan_info.add_column("wlan")
         
         if rssi_avg_max > -70:
-            rssi_color='green'
+                rssi_color='green'
         elif rssi_avg_max > -80:
             rssi_color='yellow'
         else:
@@ -244,59 +244,55 @@ def main (ip,port,chname,shpkt,shrssi):
     
     console = Console()
 
-    console.print("\n")
-    console.rule("WFB-MON") 
-    console.print("")
+    print("\n")
+    print("WFB-MON-STAT") 
+    print("")
     #---------------------------------------------------------------------------------------------------
-    
-    with Live(print_status(), refresh_per_second=4) as live:
         
-        while not exit_flag:
+    while not exit_flag:
             
-            data, addr = sock.recvfrom(2048) 
-            line = data.decode("utf-8")
-            #live.console.print(line.split())
-            parts = re.split(r"\s+", line)
-            if parts[0] == chname:
-                if parts[0][:2] == 'rx':
-                    if parts[2] == "ANT":
-                        live.console.print(line.split())
-                        ant_num = int(parts[3])
-                        pkts, rssi_min, rssi_avg, rssi_max = map(int, parts[4].split(":"))
-                        for i in range(wlan_number*2):
-                            if ant_num == ant_data[i]["ant_num"]: 
-                                ant_data[i]["pkts"] = pkts
-                                ant_data[i]["rssi_min"] = rssi_min
-                                ant_data[i]["rssi_avg"] = rssi_avg
-                                ant_data[i]["rssi_max"] = rssi_max
-                        #live.update(print_status(pkt, fec_r, pkts, pkt_lost, d_err, fec_r_s, pkt_lost_s, d_err_s,ant_data))
-                    elif parts[2] == "PKT":
-                        live.console.print(line.split())
-                        pkts_1, zero, pkts, fec_r_s, pkt_lost_s, d_err_s = map(int, parts[3].split(":"))
-                        pkt+= pkts
-                        fec_r+= fec_r_s 
-                        pkt_lost+= pkt_lost_s
-                        d_err+= d_err_s
-                        live.update(rx_print_status(pkt, fec_r, pkts, pkt_lost, d_err, fec_r_s, pkt_lost_s, d_err_s,ant_data,channel,bandwidth,wlans_info))
-                        ant_data = []
-                        for i in range(wlan_number):
-                            ant_data.append({"ant_num": i*100,"pkts": 0, "rssi_min": 0, "rssi_avg": 0, "rssi_max": 0})
-                            ant_data.append({"ant_num": i*100+1,"pkts": 0, "rssi_min": 0, "rssi_avg": 0, "rssi_max": 0})
-                    elif parts[1] == "INF":
-                        channel = parts[2]
-                        bandwidth = parts[3]
-                        wlans_info = parts[4].split(":")
-                        wlan_number = int(wlans_info[0])
-                elif parts[0][:12] == "udp_proxy_rx":
-                    live.console.print(line.split())
-                    uprx_pkt_num, uprx_pkts, uprx_pkts_lost, uprx_qlt = map(int, parts[2].split(":"))
-                    uprx_pkt += uprx_pkts 
-                    uprx_pkt_lost += uprx_pkts_lost
-                    live.update(uprx_print_status(uprx_pkt_num, uprx_pkts, uprx_pkts_lost, uprx_qlt,uprx_pkt, uprx_pkt_lost))
-                    pass
+        data, addr = sock.recvfrom(2048) 
+        line = data.decode("utf-8")
+        parts = re.split(r"\s+", line)
+        if parts[0] == chname:
+            if parts[0][:2] == 'rx':
+                if parts[2] == "ANT":
+                    print(line.split())
+                    ant_num = int(parts[3])
+                    pkts, rssi_min, rssi_avg, rssi_max = map(int, parts[4].split(":"))
+                    for i in range(wlan_number*2):
+                        if ant_num == ant_data[i]["ant_num"]: 
+                            ant_data[i]["pkts"] = pkts
+                            ant_data[i]["rssi_min"] = rssi_min
+                            ant_data[i]["rssi_avg"] = rssi_avg
+                            ant_data[i]["rssi_max"] = rssi_max
+                elif parts[2] == "PKT":
+                    print(line.split())
+                    pkts_1, zero, pkts, fec_r_s, pkt_lost_s, d_err_s = map(int, parts[3].split(":"))
+                    pkt+= pkts
+                    fec_r+= fec_r_s 
+                    pkt_lost+= pkt_lost_s
+                    d_err+= d_err_s
+                    rx_print_status(pkt, fec_r, pkts, pkt_lost, d_err, fec_r_s, pkt_lost_s, d_err_s,ant_data,channel,bandwidth,wlans_info)
+                    ant_data = []
+                    for i in range(wlan_number):
+                        ant_data.append({"ant_num": i*100,"pkts": 0, "rssi_min": 0, "rssi_avg": 0, "rssi_max": 0})
+                        ant_data.append({"ant_num": i*100+1,"pkts": 0, "rssi_min": 0, "rssi_avg": 0, "rssi_max": 0})
+                elif parts[1] == "INF":
+                    channel = parts[2]
+                    bandwidth = parts[3]
+                    wlans_info = parts[4].split(":")
+                    wlan_number = int(wlans_info[0])
+            elif parts[0][:12] == "udp_proxy_rx":
+                print(line.split())
+                uprx_pkt_num, uprx_pkts, uprx_pkts_lost, uprx_qlt = map(int, parts[2].split(":"))
+                uprx_pkt += uprx_pkts 
+                uprx_pkt_lost += uprx_pkts_lost
+                uprx_print_status(uprx_pkt_num, uprx_pkts, uprx_pkts_lost, uprx_qlt,uprx_pkt, uprx_pkt_lost)
+                pass
 
             elif parts[0] == "[err]":
-                live.console.print("[bold red]"+line+"[/]")
+                print("err: "+line)
             
 if __name__ == '__main__':
     main()

@@ -51,7 +51,8 @@ def main(conf):
         while not exit_flag:
             data, addr = sock.recvfrom(2048)
             sock.sendto(data, (hb_wfb_mon_ip, hb_wfb_mon_port))
-    
+        return 0
+      
     signal.signal(signal.SIGINT, signal_handler)
     wfb_server_dir = os.path.dirname(os.path.abspath(__file__))+"/"
     conf = wfb_server_dir+conf
@@ -234,4 +235,3 @@ def main(conf):
                         
 if __name__ == '__main__':
     main()
-
