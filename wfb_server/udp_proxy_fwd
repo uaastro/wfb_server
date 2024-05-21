@@ -19,9 +19,6 @@ def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn,rpn):
     UDP_IP_RX= ip_rx
     UDP_PORT_RX = port_rx
 
-    link_id = 1
-    pkt_num = 0
-    
     udp_streams = []
     for i in range(ptxn):
         udp_streams.append({"ip": ip_tx, "port": port_tx + i})
@@ -34,7 +31,7 @@ def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn,rpn):
     sock_rx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock_rx.bind((UDP_IP_RX, UDP_PORT_RX))
 
-    print("udp_proxy_tx started...")
+    print("udp_proxy_fwd started...")
     print(f"rx: {UDP_IP_RX} : {UDP_PORT_RX}")
 
     for udp_stream in udp_streams:
@@ -46,12 +43,10 @@ def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn,rpn):
         
         data, addr = sock_rx.recvfrom(UDP_MAX_PKT_SIZE)
         PACKET_SIZE = len(data)
-        pkt_num += 1
-        packet = struct.pack("!II"+str(PACKET_SIZE)+"s", link_id, pkt_num, data)
-        
+
         for udp_stream in udp_streams:
             for k in range(rpn):
-                sock_tx.sendto(packet, (udp_stream["ip"], udp_stream["port"]))
+                sock_tx.sendto(data, (udp_stream["ip"], udp_stream["port"]))
 
 
 if __name__ == '__main__':
