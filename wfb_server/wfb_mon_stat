@@ -8,13 +8,6 @@ import sys
 
 from multiprocessing import Process
 
-from rich.console import Console
-from rich.theme import Theme
-from rich.live import Live
-from rich.table import Table
-from rich import box
-from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn
-from rich.rule import Rule
 import click
 
 @click.command()
@@ -23,9 +16,10 @@ import click
 @click.option('--chname', default="rx_video", help='stat channel name/default rx_video')
 @click.option('--shpkt', default="true", help='show pkt stat/default true')
 @click.option('--shrssi', default="true", help='show rssi stat/default true')
+@click.option('--mp_ip', default="127.0.0.1", help='mavlink proxy ip adress')
+@click.option('--mp_port', default=14560, help='mavlink proxy port')
 
-
-def main (ip,port,chname,shpkt,shrssi):
+def main (ip,port,chname,shpkt,shrssi,mp_ip,mp_port):
 
     global exit_flag
     exit_flag = False
@@ -55,63 +49,23 @@ def main (ip,port,chname,shpkt,shrssi):
             return frequency
         else:
             return None
-    
-    def print_status():
-        
-        table_main = Table(expand=True,show_header=False,highlight=
-                      True,box= None, title="", title_style="white",title_justify="center")
-        table_main.add_column(chname)
-        table_main.add_row(Rule(title=chname))
 
-        return table_main 
-    
+
     def uprx_print_status(d_uprx_pkt_num, d_uprx_pkts, d_uprx_pkts_lost, d_uprx_qlt,d_uprx_pkt, d_uprx_pkt_lost):
-        
-        table_main = Table(expand=True,show_header=False,highlight=
-                      True,box= None, title="", title_style="white",title_justify="center")
-        table_main.add_column(chname)
-        table_main.add_row(Rule(title=chname))
 
-        table_uprx_status = Table(show_header=False,highlight=
-                      True,box=box.ROUNDED,style="blue",expand=True)
-        table_uprx_status.add_column("udp_proxy_rx")
-        qlt_color = 'green'
-        
-        if d_uprx_qlt > 97:
-            qlt_color = 'green'
-        elif d_uprx_qlt > 89:
-            qlt_color = 'yellow'
-        else:
-            qlt_color = 'red'
+        print(f"pkt/s: {d_uprx_pkts:}{d_uprx_pkt} pkt_loss: {d_uprx_pkts_lost:}{d_uprx_pkt_lost} qlt: {d_uprx_qlt}")
 
-        table_uprx_status.add_row(f"pkt/s: [cyan]{d_uprx_pkts:,}[/][gray30]/{d_uprx_pkt:,}[/] pkt_loss: [cyan]{d_uprx_pkts_lost:,}[/][gray30]/{d_uprx_pkt_lost:,}[/] quality: [{qlt_color}]{d_uprx_qlt}[/]%")
-        
-        table_main.add_row(table_uprx_status)
+        return
 
-        return table_main 
+    def rx_print_status(d_pkt, d_fec_r, d_pkts, d_pkt_lost, d_d_err, d_fec_r_s, d_pkt_lost_s, d_d_err_s, d_ant_data, d_channel,d_bandwidth,d_wlans_info):
 
-    def rx_print_status(d_pkt, d_fec_r, d_pkts, d_pkt_lost, d_d_err, d_fec_r_s, d_pkt_lost_s, d_d_err_s, d_ant_data, d_channel,d_bandwidth,d_wlans_info) -> Table:
-        
-        table_main = Table(expand=True,show_header=False,highlight=
-                      True,box= None, title="", title_style="white",title_justify="center")
-        table_main.add_column(chname)
-        #table_main.add_column("RSSI")
-        table_main.add_row(Rule(title=chname))
-        
-        table_rssi = Table(show_header=True,highlight=
-                      True,box=box.ROUNDED,expand=True) #box.ASCII2
-        
-        table_rssi.add_column("[ANT]")
-        table_rssi.add_column("pkt/s",justify="right")
-        table_rssi.add_column("RSSI",justify="center")
-        table_rssi.add_column("RSSI",justify="center")
         rssi_avg_max = -120
         pkts_max = 0
         for ant in ant_data:
-            d_rssi_min = ant["rssi_min"]
+            #d_rssi_min = ant["rssi_min"]
             d_rssi_avg = ant["rssi_avg"]
-            d_rssi_max = ant["rssi_max"]
-            d_ant_num = ant["ant_num"]
+            #d_rssi_max = ant["rssi_max"]
+            #d_ant_num = ant["ant_num"]
             d_ant_pkts = ant["pkts"]
 
             if (d_rssi_avg > rssi_avg_max) and (d_ant_pkts > 0):
@@ -121,101 +75,42 @@ def main (ip,port,chname,shpkt,shrssi):
 
             rssi_mlvl = 106 - abs(d_rssi_avg-16)
             d_total = 106
-            if d_rssi_avg > -70:
-                prgs_color='green'
-            elif d_rssi_avg > -80:
-                prgs_color='yellow'
-            else:
-                prgs_color='red'
-            if d_ant_pkts == 0:
-                prgs_color="grey58"
-                #d_total = None
-                rssi_mlvl =0
-            progress = Progress(TextColumn("[progress.description]{task.description}"), BarColumn(complete_style=prgs_color,pulse_style="grey58"), TaskProgressColumn(text_format='[progress.percentage]{task.percentage:>3.0f}%',style='green'))
-            task = progress.add_task(f"[grey58]{d_ant_num:3}", total=d_total)
-            progress.update(task, completed=rssi_mlvl)
-            table_rssi.add_row(f"[grey58]{d_ant_num}[/]",f"{d_ant_pkts}",f"{d_rssi_min:3} < {d_rssi_avg:3} < {d_rssi_max:3}",progress)
 
-        table_wlan_info = Table(show_header=False,highlight=
-                      True,box=box.ROUNDED,style="blue",expand=True)
-        table_wlan_info.add_column("wlan")
-        
-        if rssi_avg_max > -70:
-                rssi_color='green'
-        elif rssi_avg_max > -80:
-            rssi_color='yellow'
-        else:
-            rssi_color='red'
-        if pkts_max == 0:
-            rssi_color="grey58"
-        
         if pkts_max > 0:
             quality = int(100 - (100*d_pkt_lost_s)/(pkts_max+d_pkt_lost_s))
-        else: 
-            quality = 0
-        
-        qlt_color = 'green'
-        
-        if quality > 97:
-            qlt_color = 'green'
-        elif quality > 89:
-            qlt_color = 'yellow'
         else:
-            qlt_color = 'red'     
+            quality = 0
 
-        table_wlan_info.add_row(f"channel: [cyan]{d_channel}[/] ({wifi_ch_freq(int(d_channel))} MHz) band_w: {d_bandwidth} pkt/s: {pkts_max} RSSI: [{prgs_color}]{rssi_avg_max}[/] dBm quality: [{qlt_color}]{quality}[/]%")
-        
-        table_wlan = Table(show_header=False,highlight=
-                      True,box=box.ROUNDED,style="blue",expand=True)
-        table_wlan.add_column("wlan",min_width=74)
-        table_wlan.add_row(f"{d_wlans_info[1:]}")
 
-        table_pkt = Table(show_header=False,highlight=
-                      True,box=box.ROUNDED,style="blue",expand=True)
-        
-        table_pkt.add_column("info")
-        table_pkt.add_row(f"pkt/s: [cyan]{d_pkts}[/][gray30]/{d_pkt:,}[/] fec_r: [cyan]{d_fec_r_s}[/][gray30]/{d_fec_r:,}[/] loss: [cyan]{d_pkt_lost_s}[/][gray30]/{d_pkt_lost:,}[/] d_err: [cyan]{d_d_err_s}[/][gray30]/{d_d_err:,}[/]")
-        #table_pkt.add_column("[RX]")
-        #table_pkt.add_column("pkt/s",justify="right")
-        #table_pkt.add_column("pkt",justify="right")
-        
-        #table_pkt.add_row("recv",f"{d_pkts}",f"{d_pkt:,}")
-        #table_pkt.add_row("fec_r",f"{d_fec_r_s}", f"{d_fec_r:,}")
-        #table_pkt.add_row("lost",f"{d_pkt_lost_s}",f"{d_pkt_lost:,}")
-        #table_pkt.add_row("d_err",f"{d_d_err_s}",f"{d_d_err:,}")
-        
-        table_main.add_row(table_wlan_info)
-        table_main.add_row(table_wlan)
-        if shpkt == "true":
-            table_main.add_row(table_pkt)
-        if shrssi == "true":
-            table_main.add_row(table_rssi)
-        
-        return table_main       
-        
 
-    
+        print(f"channel: {d_channel} ({wifi_ch_freq(int(d_channel))} MHz) band_w: {d_bandwidth} pkt/s: {pkts_max} RSSI: {rssi_avg_max} dBm quality: {quality}")
+
+
+        return
+
+
+
     UDP_IP = ip
     UDP_PORT = port
-    
+
     signal.signal(signal.SIGINT, signal_handler)
 
     msg_connect = 'wfb_mon:connect'
-    
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     ext = False
     while not ext:
-        try: 
+        try:
             sock.bind((UDP_IP, UDP_PORT))
             ext = True
         except:
-            UDP_PORT +=1 
+            UDP_PORT +=1
 
     msg_connect+=f':{UDP_IP}:{UDP_PORT}'
     if not ((UDP_IP == ip) and (UDP_PORT == port)):
         thread_heartbit = Process(target=heartbit, args=(msg_connect,sock,ip,port))
         thread_heartbit.start()
-        
+
 
     ant_data = []
     pkt = 0
@@ -234,43 +129,42 @@ def main (ip,port,chname,shpkt,shrssi):
     wlan_number = 4
     wlans_info = f"{wlan_number}:wlan0:wlan1:wlan2:wlan3".split(":")
 
-    uprx_pkt=0 
+    uprx_pkt=0
     uprx_pkt_lost = 0
-     
+
 
     for i in range(wlan_number):
         ant_data.append({"ant_num": i*100,"pkts": 0, "rssi_min": 0, "rssi_avg": 0, "rssi_max": 0})
         ant_data.append({"ant_num": i*100+1,"pkts": 0, "rssi_min": 0, "rssi_avg": 0, "rssi_max": 0})
-    
-    console = Console()
+
 
     print("\n")
-    print("WFB-MON-STAT") 
+    print("WFB-MON-STAT")
     print("")
     #---------------------------------------------------------------------------------------------------
-        
+
     while not exit_flag:
-            
-        data, addr = sock.recvfrom(2048) 
+
+        data, addr = sock.recvfrom(2048)
         line = data.decode("utf-8")
         parts = re.split(r"\s+", line)
         if parts[0] == chname:
             if parts[0][:2] == 'rx':
                 if parts[2] == "ANT":
-                    print(line.split())
+                    #print(line.split())
                     ant_num = int(parts[3])
                     pkts, rssi_min, rssi_avg, rssi_max = map(int, parts[4].split(":"))
                     for i in range(wlan_number*2):
-                        if ant_num == ant_data[i]["ant_num"]: 
+                        if ant_num == ant_data[i]["ant_num"]:
                             ant_data[i]["pkts"] = pkts
                             ant_data[i]["rssi_min"] = rssi_min
                             ant_data[i]["rssi_avg"] = rssi_avg
                             ant_data[i]["rssi_max"] = rssi_max
                 elif parts[2] == "PKT":
-                    print(line.split())
+                    #print(line.split())
                     pkts_1, zero, pkts, fec_r_s, pkt_lost_s, d_err_s = map(int, parts[3].split(":"))
                     pkt+= pkts
-                    fec_r+= fec_r_s 
+                    fec_r+= fec_r_s
                     pkt_lost+= pkt_lost_s
                     d_err+= d_err_s
                     rx_print_status(pkt, fec_r, pkts, pkt_lost, d_err, fec_r_s, pkt_lost_s, d_err_s,ant_data,channel,bandwidth,wlans_info)
@@ -286,13 +180,13 @@ def main (ip,port,chname,shpkt,shrssi):
             elif parts[0][:12] == "udp_proxy_rx":
                 print(line.split())
                 uprx_pkt_num, uprx_pkts, uprx_pkts_lost, uprx_qlt = map(int, parts[2].split(":"))
-                uprx_pkt += uprx_pkts 
+                uprx_pkt += uprx_pkts
                 uprx_pkt_lost += uprx_pkts_lost
                 uprx_print_status(uprx_pkt_num, uprx_pkts, uprx_pkts_lost, uprx_qlt,uprx_pkt, uprx_pkt_lost)
                 pass
 
             elif parts[0] == "[err]":
                 print("err: "+line)
-            
+
 if __name__ == '__main__':
     main()
