@@ -1,25 +1,24 @@
 #!/usr/bin/python3
-
 import re
 import time
 import socket
 import signal
 import sys
-
-from multiprocessing import Process
-
 import click
+from multiprocessing import Process
+import pymavlink.dialects.v20.ardupilotmega as mavlink2_0
 
 @click.command()
 @click.option('--ip', default="127.0.0.1", help='address of wfb_mon server/default 127.0.0.1')
 @click.option('--port', default=14550, help='port of wfb server/default 14550')
 @click.option('--chname', default="rx_video", help='stat channel name/default rx_video')
-@click.option('--shpkt', default="true", help='show pkt stat/default true')
-@click.option('--shrssi', default="true", help='show rssi stat/default true')
 @click.option('--mp_ip', default="127.0.0.1", help='mavlink proxy ip adress')
 @click.option('--mp_port', default=14560, help='mavlink proxy port')
+@click.option('--id_tgs', default=255, help='target system id')
+@click.option('--id_tgc', default=100, help='target component id')
+@click.option('--id_cmd', default=1058, help='command id')
 
-def main (ip,port,chname,shpkt,shrssi,mp_ip,mp_port):
+def main (ip,port,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd):
 
     global exit_flag
     exit_flag = False
@@ -38,26 +37,42 @@ def main (ip,port,chname,shpkt,shrssi,mp_ip,mp_port):
                 hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
                 timestamp = time.time()
 
-    def wifi_ch_freq(channel):
+    def wifi_ch_freq(channel,bw):
         if 1 <= channel <= 13:
             # for channels from 1 to 13 @ 2,4 GHz
-            frequency = 2407 + (channel - 1) * 5
+            frequency = 2407 + (channel - 1) * 5 + bw/2
             return frequency
         elif 36 <= channel <= 181:
             # for channels from 36 to 165 @ 5170-5835 MHz
-            frequency = 5170 + (channel - 36) * 5
+            frequency = 5170 + (channel - 36) * 5 + bw/2
             return frequency
         else:
             return None
 
-
+    def get_cmd_ln(mav,rssi,qlt,pkts,ch,freq):
+    
+        command_ln = mav.command_long_encode(
+                target_system=255,        
+                target_component=100,     
+                command=1058,           
+                confirmation=0,         
+                param1=rssi,               
+                param2=qlt,              
+                param3=pkts,               
+                param4=ch,               
+                param5=freq,               
+                param6=0,               
+                param7=0                
+            )
+        return command_ln
+    
     def uprx_print_status(d_uprx_pkt_num, d_uprx_pkts, d_uprx_pkts_lost, d_uprx_qlt,d_uprx_pkt, d_uprx_pkt_lost):
 
         print(f"pkt/s: {d_uprx_pkts:}{d_uprx_pkt} pkt_loss: {d_uprx_pkts_lost:}{d_uprx_pkt_lost} qlt: {d_uprx_qlt}")
 
         return
 
-    def rx_print_status(d_pkt, d_fec_r, d_pkts, d_pkt_lost, d_d_err, d_fec_r_s, d_pkt_lost_s, d_d_err_s, d_ant_data, d_channel,d_bandwidth,d_wlans_info):
+    def rx_print_status(d_mav, d_sock, d_pkt, d_fec_r, d_pkts, d_pkt_lost, d_d_err, d_fec_r_s, d_pkt_lost_s, d_d_err_s, d_ant_data, d_channel,d_bandwidth,d_wlans_info):
 
         rssi_avg_max = -120
         pkts_max = 0
@@ -80,16 +95,16 @@ def main (ip,port,chname,shpkt,shrssi,mp_ip,mp_port):
             quality = int(100 - (100*d_pkt_lost_s)/(pkts_max+d_pkt_lost_s))
         else:
             quality = 0
-
-
-
-        print(f"channel: {d_channel} ({wifi_ch_freq(int(d_channel))} MHz) band_w: {d_bandwidth} pkt/s: {pkts_max} RSSI: {rssi_avg_max} dBm quality: {quality}")
-
-
+        
+        d_freq = wifi_ch_freq(int(d_channel),int(d_bandwidth))
+        
+        print(f"channel: {d_channel} ({d_freq} MHz) band_w: {d_bandwidth} pkt/s: {pkts_max} RSSI: {rssi_avg_max} dBm quality: {quality}")
+        command_long = get_cmd_ln(d_mav,rssi_avg_max,quality,pkts_max,d_channel,d_freq)
+        command_long_msg = command_long.pack(d_mav)
+        d_sock.sendto(command_long_msg, (mp_ip,mp_port))
+        
         return
-
-
-
+    #-------------------------------------------------   
     UDP_IP = ip
     UDP_PORT = port
 
@@ -111,7 +126,8 @@ def main (ip,port,chname,shpkt,shrssi,mp_ip,mp_port):
         thread_heartbit = Process(target=heartbit, args=(msg_connect,sock,ip,port))
         thread_heartbit.start()
 
-
+    mav = mavlink2_0.MAVLink(None)
+    
     ant_data = []
     pkt = 0
     fec_r = 0
@@ -132,7 +148,6 @@ def main (ip,port,chname,shpkt,shrssi,mp_ip,mp_port):
     uprx_pkt=0
     uprx_pkt_lost = 0
 
-
     for i in range(wlan_number):
         ant_data.append({"ant_num": i*100,"pkts": 0, "rssi_min": 0, "rssi_avg": 0, "rssi_max": 0})
         ant_data.append({"ant_num": i*100+1,"pkts": 0, "rssi_min": 0, "rssi_avg": 0, "rssi_max": 0})
@@ -151,7 +166,6 @@ def main (ip,port,chname,shpkt,shrssi,mp_ip,mp_port):
         if parts[0] == chname:
             if parts[0][:2] == 'rx':
                 if parts[2] == "ANT":
-                    #print(line.split())
                     ant_num = int(parts[3])
                     pkts, rssi_min, rssi_avg, rssi_max = map(int, parts[4].split(":"))
                     for i in range(wlan_number*2):
@@ -161,13 +175,12 @@ def main (ip,port,chname,shpkt,shrssi,mp_ip,mp_port):
                             ant_data[i]["rssi_avg"] = rssi_avg
                             ant_data[i]["rssi_max"] = rssi_max
                 elif parts[2] == "PKT":
-                    #print(line.split())
                     pkts_1, zero, pkts, fec_r_s, pkt_lost_s, d_err_s = map(int, parts[3].split(":"))
                     pkt+= pkts
                     fec_r+= fec_r_s
                     pkt_lost+= pkt_lost_s
                     d_err+= d_err_s
-                    rx_print_status(pkt, fec_r, pkts, pkt_lost, d_err, fec_r_s, pkt_lost_s, d_err_s,ant_data,channel,bandwidth,wlans_info)
+                    rx_print_status(mav, sock, pkt, fec_r, pkts, pkt_lost, d_err, fec_r_s, pkt_lost_s, d_err_s,ant_data,channel,bandwidth,wlans_info)
                     ant_data = []
                     for i in range(wlan_number):
                         ant_data.append({"ant_num": i*100,"pkts": 0, "rssi_min": 0, "rssi_avg": 0, "rssi_max": 0})
