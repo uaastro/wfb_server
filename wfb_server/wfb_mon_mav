@@ -37,14 +37,14 @@ def main (ip,port,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd):
                 hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
                 timestamp = time.time()
 
-    def wifi_ch_freq(channel,bw):
+    def wifi_ch_freq(channel):
         if 1 <= channel <= 13:
             # for channels from 1 to 13 @ 2,4 GHz
-            frequency = 2407 + (channel - 1) * 5 + bw/2
+            frequency = 2407 + (channel - 1) * 5
             return frequency
         elif 36 <= channel <= 181:
             # for channels from 36 to 165 @ 5170-5835 MHz
-            frequency = 5170 + (channel - 36) * 5 + bw/2
+            frequency = 5170 + (channel - 36) * 5
             return frequency
         else:
             return None
@@ -96,10 +96,11 @@ def main (ip,port,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd):
         else:
             quality = 0
         
-        d_freq = wifi_ch_freq(int(d_channel),int(d_bandwidth))
+        d_freq = wifi_ch_freq(int(d_channel))
         
         print(f"channel: {d_channel} ({d_freq} MHz) band_w: {d_bandwidth} pkt/s: {pkts_max} RSSI: {rssi_avg_max} dBm quality: {quality}")
         command_long = get_cmd_ln(d_mav,rssi_avg_max,quality,pkts_max,d_channel,d_freq)
+        print(command_long)
         command_long_msg = command_long.pack(d_mav)
         d_sock.sendto(command_long_msg, (mp_ip,mp_port))
         
