@@ -11,14 +11,16 @@ import pymavlink.dialects.v20.ardupilotmega as mavlink2_0
 @click.command()
 @click.option('--ip', default="127.0.0.1", help='address of wfb_mon server/default 127.0.0.1')
 @click.option('--port', default=14550, help='port of wfb server/default 14550')
+@click.option('--ip_tx', default="127.0.0.1", help='ip for tx (from which mav command will be send) deffault 127.0.0.1')
+@click.option('--port_tx', default=14814, help='port for tx (from which mav command will be send) 14814')
 @click.option('--chname', default="rx_video", help='stat channel name/default rx_video')
 @click.option('--mp_ip', default="127.0.0.1", help='mavlink proxy ip adress')
-@click.option('--mp_port', default=14560, help='mavlink proxy port')
+@click.option('--mp_port', default=14500, help='mavlink proxy port')
 @click.option('--id_tgs', default=255, help='target system id')
 @click.option('--id_tgc', default=100, help='target component id')
 @click.option('--id_cmd', default=1058, help='command id')
 
-def main (ip,port,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd):
+def main (ip,port,ip_tx,port_tx,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd):
 
     global exit_flag
     exit_flag = False
@@ -49,12 +51,12 @@ def main (ip,port,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd):
         else:
             return None
 
-    def get_cmd_ln(mav,rssi,qlt,pkts,ch,freq):
+    def get_cmd_ln(d_mav,rssi,qlt,pkts,ch,freq):
     
-        command_ln = mav.command_long_encode(
-                target_system=255,        
-                target_component=100,     
-                command=1058,           
+        command_ln = d_mav.command_long_encode(
+                target_system=id_tgs,        
+                target_component=id_tgc,     
+                command=id_cmd,           
                 confirmation=0,         
                 param1=rssi,               
                 param2=qlt,              
@@ -98,10 +100,11 @@ def main (ip,port,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd):
         
         d_freq = wifi_ch_freq(int(d_channel))
         
-        print(f"channel: {d_channel} ({d_freq} MHz) band_w: {d_bandwidth} pkt/s: {pkts_max} RSSI: {rssi_avg_max} dBm quality: {quality}")
-        command_long = get_cmd_ln(d_mav,rssi_avg_max,quality,pkts_max,d_channel,d_freq)
-        print(command_long)
+        #print(f"channel: {d_channel} ({d_freq} MHz) band_w: {d_bandwidth} pkt/s: {pkts_max} RSSI: {rssi_avg_max} dBm quality: {quality}")
+        command_long = get_cmd_ln(d_mav,float(rssi_avg_max),float(quality),float(pkts_max),float(d_channel),float(d_freq))
+        #print(command_long)
         command_long_msg = command_long.pack(d_mav)
+        #print(mp_ip,mp_port)
         d_sock.sendto(command_long_msg, (mp_ip,mp_port))
         
         return
@@ -114,6 +117,9 @@ def main (ip,port,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd):
     msg_connect = 'wfb_mon:connect'
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock_tx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock_tx.bind((ip_tx, port_tx))
+
     ext = False
     while not ext:
         try:
@@ -181,7 +187,7 @@ def main (ip,port,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd):
                     fec_r+= fec_r_s
                     pkt_lost+= pkt_lost_s
                     d_err+= d_err_s
-                    rx_print_status(mav, sock, pkt, fec_r, pkts, pkt_lost, d_err, fec_r_s, pkt_lost_s, d_err_s,ant_data,channel,bandwidth,wlans_info)
+                    rx_print_status(mav, sock_tx, pkt, fec_r, pkts, pkt_lost, d_err, fec_r_s, pkt_lost_s, d_err_s,ant_data,channel,bandwidth,wlans_info)
                     ant_data = []
                     for i in range(wlan_number):
                         ant_data.append({"ant_num": i*100,"pkts": 0, "rssi_min": 0, "rssi_avg": 0, "rssi_max": 0})
