@@ -3,23 +3,30 @@ import socket
 import click
 
 @click.command()
-@click.option('--mpkts', default=2048, help='udp max pkt size def: 2048')
+@click.option('--mpkts', default=4096, help='udp max pkt size def: 2048')
 @click.option('--ip_rx', default='0.0.0.0', help='ip of sorce stream def: 127.0.0.1')
-@click.option('--port_rx', default=5700, help='port of source stream def: 5700')
+@click.option('--port_rx', default=5800, help='port of source stream def: 5750')
 @click.option('--ip_tx', default='127.0.0.1', help='ip of destination host def: 127.0.0.1')
-@click.option('--port_tx', default=5800, help='first port of destination hosts def: 5680')
+@click.option('--port_tx', default=5750, help='first port of destination hosts def: 5750')
 
 def main(mpkts,ip_rx,port_rx,ip_tx,port_tx):
     
+    print("TCP to UDP fwd")
+    print(f"ip_rx: {ip_rx} port_rx: {port_rx}")
+    print(f"ip_tx: {ip_tx} port_tx: {port_tx}")
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_socket.bind((ip_rx, port_rx))
     tcp_socket.listen(1)
+    print(f"\nwaiting for incoming connection at {ip_rx}:{port_rx}...\n")
     conn, addr = tcp_socket.accept()
-    
+    print(f"connection established with {addr}")
+    print(tcp_socket.getsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF))
+    print(tcp_socket.getsockopt(socket.SOL_SOCKET,socket.SO_SNDBUF))
+    print(conn.getsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF))
+    print(conn.getsockopt(socket.SOL_SOCKET,socket.SO_SNDBUF))
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    
     while True:
-        data = conn.recv(1024)
+        data = conn.recv(mpkts)
         if not data:
             break
         udp_socket.sendto(data, (ip_tx, port_tx))

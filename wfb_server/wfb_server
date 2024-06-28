@@ -141,7 +141,7 @@ def main(conf):
             elif section[:6]=='udp_tx':
                 options=config[section]
                 udp_xx=[wfb_server_dir+"udp_tx","--ip",options['udp_tx_ip'],"--port",options['udp_tx_port'],"--pksize",options['udp_tx_pksize'],"--pks",options['udp_tx_pks'],"--lid",options['udp_tx_lid']]
-                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                procesexcepts=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
                 
