@@ -1,0 +1,45 @@
+import socket
+import struct
+
+def receive_udp_packets(input_port, output_port):
+    udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    udp_socket.bind(('', input_port))
+    
+    packets = {}
+    packet_chunks = {}
+    
+    while True:
+        data, addr = udp_socket.recvfrom(65535)
+        packet_id = data[:4]
+        chunk_id = struct.unpack('H', data[4:6])[0]
+        chunk = data[6:]
+        
+        if packet_id not in packets:
+            packets[packet_id] = []
+            packet_chunks[packet_id] = 0
+        
+        packets[packet_id].append((chunk_id, chunk))
+        packet_chunks[packet_id] += 1
+        
+        # Check if we have received all chunks for the packet
+        if all(i in dict(packets[packet_id]) for i in range(packet_chunks[packet_id])):
+            # Sort chunks by chunk_id and concatenate to form the original packet
+            sorted_chunks = [chunk for _, chunk in sorted(packets[packet_id])]
+            full_packet = b''.join(sorted_chunks)
+            
+            # Send the full packet to the output port
+            udp_socket.sendto(full_packet, ('localhost', output_port))
+            
+            # Clean up
+            del packets[packet_id]
+            del packet_chunks[packet_id]
+        elif len(packets[packet_id]) > packet_chunks[packet_id]:
+            # Drop the packet and increment lost packet counter
+            del packets[packet_id]
+            del packet_chunks[packet_id]
+            print(f"Packet {packet_id} lost.")
+
+if __name__ == '__main__':
+    input_port = 6000
+    output_port = 7000
+    receive_udp_packets(input_port, output_port)
