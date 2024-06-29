@@ -4,7 +4,7 @@ import click
 
 @click.command()
 @click.option('--mpkts', default=4096, help='udp max pkt size def: 2048')
-@click.option('--ip_rx', default='0.0.0.0', help='ip of sorce stream def: 127.0.0.1')
+@click.option('--ip_rx', default='0.0.0.0', help='ip of sorce stream def: 0.0.0.0')
 @click.option('--port_rx', default=5800, help='port of source stream def: 5750')
 @click.option('--ip_tx', default='127.0.0.1', help='ip of destination host def: 127.0.0.1')
 @click.option('--port_tx', default=5750, help='first port of destination hosts def: 5750')
@@ -20,10 +20,7 @@ def main(mpkts,ip_rx,port_rx,ip_tx,port_tx):
     print(f"\nwaiting for incoming connection at {ip_rx}:{port_rx}...\n")
     conn, addr = tcp_socket.accept()
     print(f"connection established with {addr}")
-    print(tcp_socket.getsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF))
-    print(tcp_socket.getsockopt(socket.SOL_SOCKET,socket.SO_SNDBUF))
-    print(conn.getsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF))
-    print(conn.getsockopt(socket.SOL_SOCKET,socket.SO_SNDBUF))
+
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     while True:
         data = conn.recv(mpkts)

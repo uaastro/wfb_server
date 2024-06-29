@@ -6,7 +6,7 @@ import click
 
 @click.command()
 @click.option('--mpkts', default=2048, help='udp max pkt size def: 2048')
-@click.option('--ip_rx', default='127.0.0.1', help='ip of sorce stream def: 127.0.0.1')
+@click.option('--ip_rx', default='0.0.0.0', help='ip of sorce stream def: 0.0.0.0')
 @click.option('--port_rx', default=5700, help='port of source stream def: 5700')
 @click.option('--ip_tx', default='127.0.0.1', help='ip of destination host def: 127.0.0.1')
 @click.option('--port_tx', default=5750, help='first port of destination hosts def: 5680')
