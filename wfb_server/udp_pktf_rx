@@ -1,45 +1,83 @@
+#!/usr/bin/python3
 import socket
 import struct
+import click
+import sys
+import time
 
-def receive_udp_packets(input_port, output_port):
-    udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    udp_socket.bind(('', input_port))
-    
-    packets = {}
-    packet_chunks = {}
-    
+
+@click.command()
+@click.option('--mpkts', default=2048, help='udp max pkt size')
+@click.option('--ip_tx', default='127.0.0.1', help='ip of destination host')
+@click.option('--port_tx', default=5800, help='port of destination host')
+@click.option('--ip_rx', default='0.0.0.0', help='ip of source host')
+@click.option('--port_rx', default=5750, help='port of source host')
+@click.option('--port_wfbs', default=14650, help='wfb_server port')
+@click.option('--ip_wfbs', default='127.0.0.1', help='wfb_server_ip')
+
+def main(mpkts,ip_tx,port_tx,ip_rx,port_rx,port_wfbs,ip_wfbs):
+
+    pkt_lost=0
+    pkts = 0
+    pkt_num = 0
+    time_stamp=time.time()
+    current_pkt_id = 0
+    current_chk_num = 0
+    asm_pkt = b'' 
+    sock= socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((ip_rx,port_rx))
+
+    print("udp packet factory RX")
+    print(f"rx: {ip_rx} : {port_rx}")
+    print(f"tx: {ip_tx} : {port_tx}")
+
     while True:
-        data, addr = udp_socket.recvfrom(65535)
-        packet_id = data[:4]
-        chunk_id = struct.unpack('H', data[4:6])[0]
-        chunk = data[6:]
-        
-        if packet_id not in packets:
-            packets[packet_id] = []
-            packet_chunks[packet_id] = 0
-        
-        packets[packet_id].append((chunk_id, chunk))
-        packet_chunks[packet_id] += 1
-        
-        # Check if we have received all chunks for the packet
-        if all(i in dict(packets[packet_id]) for i in range(packet_chunks[packet_id])):
-            # Sort chunks by chunk_id and concatenate to form the original packet
-            sorted_chunks = [chunk for _, chunk in sorted(packets[packet_id])]
-            full_packet = b''.join(sorted_chunks)
+        packet, addr = sock.recvfrom(mpkts) 
+        packet_size = len(packet)
+        pkt_id, chk_nums, chk_num, data= struct.unpack("!III"+str((packet_size - 4 - 4 - 4))+"s", packet)
+        #print(f"#0/1: {pkt_id}:{chk_nums}:{chk_num}")
+        #print(f"#0/2: {current_pkt_id}:{current_chk_num}:{chk_num}")
+        if (current_pkt_id == pkt_id) and (current_chk_num == chk_num):
+            asm_pkt +=data
+            current_chk_num += 1
+            if current_chk_num == chk_nums:
+                #print (f"#1:{chk_nums}:{chk_num}")
+                sock.sendto(asm_pkt,(ip_tx,port_tx))
+                asm_pkt = b''
+                current_chk_num = 0
+                pkt_num +=1
+                pkts +=1
+        else:
+            current_pkt_id = pkt_id
+            asm_pkt = b''
+            current_chk_num = 0
+            if chk_num == 0:
+                asm_pkt +=data
+                current_chk_num += 1
+            else:
+                pkt_lost += 1
+
+            if current_chk_num == chk_nums:
+                #print (f"#2:{chk_nums}:{chk_num}")
+                sock.sendto(asm_pkt,(ip_tx,port_tx))
+                asm_pkt = b''
+                current_chk_num = 0
+                pkt_num +=1
+                pkts +=1
+
+        if (time.time() - time_stamp) >= 1:
             
-            # Send the full packet to the output port
-            udp_socket.sendto(full_packet, ('localhost', output_port))
-            
-            # Clean up
-            del packets[packet_id]
-            del packet_chunks[packet_id]
-        elif len(packets[packet_id]) > packet_chunks[packet_id]:
-            # Drop the packet and increment lost packet counter
-            del packets[packet_id]
-            del packet_chunks[packet_id]
-            print(f"Packet {packet_id} lost.")
+            if (pkts+pkt_lost) !=0:
+                qlt = int((pkts*100)/(pkts+pkt_lost))
+            else:
+                qlt = 0
+
+            stat_inf = f'udp_pktf_rx PKT {pkt_num}:{pkts}:{pkt_lost}:{qlt}'
+            #print(stat_inf)
+            #sock.sendto(stat_inf.encode("utf-8"),(ip_wfbs, port_wfbs))
+            time_stamp = time.time()
+            pkt_lost = 0
+            pkts = 0
 
 if __name__ == '__main__':
-    input_port = 6000
-    output_port = 7000
-    receive_udp_packets(input_port, output_port)
+    main()

@@ -122,8 +122,18 @@ def main(conf):
 
             elif section[:2]=='tx':
                 options=config[section]
-                wfb_xx=["/usr/bin/wfb_tx","-p",options['radio_port'],"-u",options['udp_port'],"-K",options['tx_key'],"-B",options['bandwidth'],"-G",options['G_guard_interval'],"-S",
-                        options['S_stbc'],"-L",options['L_ldpc'],"-M",options['M_mcs_index'],"-k",options['k_RS_K'],"-n",options['n_RS_N'],"-T",options['T_poll_timeout'],
+                wfb_xx=["/usr/bin/wfb_tx",
+                        "-p",options['radio_port'],
+                        "-u",options['udp_port'],
+                        "-K",options['tx_key'],
+                        "-B",options['bandwidth'],
+                        "-G",options['G_guard_interval'],
+                        "-S",options['S_stbc'],
+                        "-L",options['L_ldpc'],
+                        "-M",options['M_mcs_index'],
+                        "-k",options['k_RS_K'],
+                        "-n",options['n_RS_N'],
+                        "-T",options['T_poll_timeout'],
                         "-i",options['i_link_id']] + wlans
                 process=subprocess.Popen(wfb_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
@@ -132,7 +142,12 @@ def main(conf):
                 
             elif section[:2]=='rx':
                 options=config[section]
-                wfb_xx=["/usr/bin/wfb_rx","-p",options['radio_port'],"-c",options['ip'],"-u",options['udp_port'],"-K",options['rx_key'],"-i",options['i_link_id']]+ wlans
+                wfb_xx=["/usr/bin/wfb_rx",
+                        "-p",options['radio_port'],
+                        "-c",options['ip'],
+                        "-u",options['udp_port'],
+                        "-K",options['rx_key'],
+                        "-i",options['i_link_id']]+ wlans
                 process=subprocess.Popen(wfb_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -140,64 +155,164 @@ def main(conf):
                 
             elif section[:6]=='udp_tx':
                 options=config[section]
-                udp_xx=[wfb_server_dir+"udp_tx","--ip",options['udp_tx_ip'],"--port",options['udp_tx_port'],"--pksize",options['udp_tx_pksize'],"--pks",options['udp_tx_pks'],"--lid",options['udp_tx_lid']]
+                udp_xx=[wfb_server_dir+"udp_tx",
+                        "--ip",options['udp_tx_ip'],
+                        "--port",options['udp_tx_port'],
+                        "--pksize",options['udp_tx_pksize'],
+                        "--pks",options['udp_tx_pks'],
+                        "--lid",options['udp_tx_lid']]
                 procesexcepts=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
                 
             elif section[:12]=='udp_proxy_tx':
                 options=config[section]
-                udp_xx=[wfb_server_dir+"udp_proxy_tx","--ip_tx",options['uptx_ip_tx'],"--port_tx",options['uptx_port_tx'],"--ip_rx",options['uptx_ip_rx'],"--port_rx",options['uptx_port_rx'],"--mpkts",options['uptx_mpkts'],"--ptxn",options['uptx_ptxn'],"--rpn",options['uptx_rpn']]
+                udp_xx=[wfb_server_dir+"udp_proxy_tx",
+                        "--ip_tx",options['uptx_ip_tx'],
+                        "--port_tx",options['uptx_port_tx'],
+                        "--ip_rx",options['uptx_ip_rx'],
+                        "--port_rx",options['uptx_port_rx'],
+                        "--mpkts",options['uptx_mpkts'],
+                        "--ptxn",options['uptx_ptxn'],
+                        "--rpn",options['uptx_rpn']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
                 
             elif section[:12]=='udp_proxy_rx':
                 options=config[section]
-                #need to add wfb_server ip and port!!!!!!!
-                udp_xx=[wfb_server_dir+"udp_proxy_rx","--ip_tx",options['uprx_ip_tx'],"--port_tx",options['uprx_port_tx'],"--ip_rx",options['uprx_ip_rx'],"--port_rx",options['uprx_port_rx'],"--mpkts",options['uprx_mpkts']]
+                udp_xx=[wfb_server_dir+"udp_proxy_rx",
+                        "--ip_tx",options['uprx_ip_tx'],
+                        "--port_tx",options['uprx_port_tx'],
+                        "--ip_rx",options['uprx_ip_rx'],
+                        "--port_rx",options['uprx_port_rx'],
+                        "--mpkts",options['uprx_mpkts'],
+                        "--ip_wfbs",options['uprx_ip_wfbs'],
+                        "--port_wfbs",options['uprx_port_wfbs']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
             
             elif section[:13]=='udp_proxy_fwd':
                 options=config[section]
-                udp_xx=[wfb_server_dir+"udp_proxy_fwd","--ip_tx",options['upfwd_ip_tx'],"--port_tx",options['upfwd_port_tx'],"--ip_rx",options['upfwd_ip_rx'],"--port_rx",options['upfwd_port_rx'],"--mpkts",options['upfwd_mpkts'],"--ptxn",options['upfwd_ptxn'],"--rpn",options['upfwd_rpn']]
+                udp_xx=[wfb_server_dir+"udp_proxy_fwd",
+                        "--ip_tx",options['upfwd_ip_tx'],
+                        "--port_tx",options['upfwd_port_tx'],
+                        "--ip_rx",options['upfwd_ip_rx'],
+                        "--port_rx",options['upfwd_port_rx'],
+                        "--mpkts",options['upfwd_mpkts'],
+                        "--ptxn",options['upfwd_ptxn'],
+                        "--rpn",options['upfwd_rpn']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
 
             elif section[:11]=='uart_to_udp':
                 options=config[section]
-                udp_xx=[wfb_server_dir+"uart_to_udp","--uart",options['uart'],"--brate",options['brate'],"--udps_port",options['udps_port']]
+                udp_xx=[wfb_server_dir+"uart_to_udp",
+                        "--uart",options['uart'],
+                        "--brate",options['brate'],
+                        "--udps_port",options['udps_port']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
 
             elif section[:14]=='wfb_mon_server':
                 options=config[section]
-                udp_xx=[wfb_server_dir+"wfb_mon_server","--mpkts",options['wfbms_mpkts'],"--wfbms_ip",options['wfbms_wfbms_ip'],"--wfbms_port",options['wfbms_wfbms_port'],"--wfbs_ip",options['wfbms_wfbs_ip'],"--wfbs_port",options['wfbms_wfbs_port']]
+                udp_xx=[wfb_server_dir+"wfb_mon_server",
+                        "--mpkts",options['wfbms_mpkts'],
+                        "--wfbms_ip",options['wfbms_wfbms_ip'],
+                        "--wfbms_port",options['wfbms_wfbms_port'],
+                        "--wfbs_ip",options['wfbms_wfbs_ip'],
+                        "--wfbs_port",options['wfbms_wfbs_port']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section 
 
             elif section[:13]=='mav_router_rx':
                 options=config[section]
-                udp_xx=[wfb_server_dir+"mav_router_rx","--ip_r",options['mvrrx_ip_r'],"--port_r",options['mvrrx_port_r'],"--ip_mp",options['mvrrx_ip_mp'],"--port_mp",options['mvrrx_port_mp'],"--ip_rtx",options['mvrrx_ip_rtx'],"--port_rtx",options['mvrrx_port_rtx']]
+                udp_xx=[wfb_server_dir+"mav_router_rx",
+                        "--ip_r",options['mvrrx_ip_r'],
+                        "--port_r",options['mvrrx_port_r'],
+                        "--ip_mp",options['mvrrx_ip_mp'],
+                        "--port_mp",options['mvrrx_port_mp'],
+                        "--ip_rtx",options['mvrrx_ip_rtx'],
+                        "--port_rtx",options['mvrrx_port_rtx']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
 
             elif section[:13]=='mav_router_tx':
                 options=config[section]
-                udp_xx=[wfb_server_dir+"mav_router_tx","--ip_r",options['mvrtx_ip_r'],"--port_r",options['mvrtx_port_r']]
+                udp_xx=[wfb_server_dir+"mav_router_tx",
+                        "--ip_r",options['mvrtx_ip_r'],
+                        "--port_r",options['mvrtx_port_r']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
 
             elif section[:11]=='wfb_mon_mav':
                 options=config[section]
-                udp_xx=[wfb_server_dir+"wfb_mon_mav","--ip",options['wfbmm_ip'],"--port",options['wfbmm_port'],"--ip_tx",options['wfbmm_ip_tx'],"--port_tx",options['wfbmm_port_tx'],"--chname",options['wfbmm_chname'],"--mp_ip",options['wfbmm_mp_ip'],"--mp_port",options['wfbmm_mp_port'],"--id_tgs",options['wfbmm_id_tgs'],"--id_tgc",options['wfbmm_id_tgc'],"--id_cmd",options['wfbmm_id_cmd']]
+                udp_xx=[wfb_server_dir+"wfb_mon_mav",
+                        "--ip",options['wfbmm_ip'],
+                        "--port",options['wfbmm_port'],
+                        "--ip_tx",options['wfbmm_ip_tx'],
+                        "--port_tx",options['wfbmm_port_tx'],
+                        "--chname",options['wfbmm_chname'],
+                        "--mp_ip",options['wfbmm_mp_ip'],
+                        "--mp_port",options['wfbmm_mp_port'],
+                        "--id_tgs",options['wfbmm_id_tgs'],
+                        "--id_tgc",options['wfbmm_id_tgc'],
+                        "--id_cmd",options['wfbmm_id_cmd']]
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
+            
+            elif section[:11]=='udp_pktf_tx':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"udp_pktf_tx",
+                        "--ip_rx",options['upfrx_ip_rx'],
+                        "--port_rx",options['upftx_port_rx'],
+                        "--ip_tx",options['upftx_ip_tx'],
+                        "--port_tx",options['upftx_port_tx'],
+                        "--pkt_mtu",options['upftx_pkt_mtu']]
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
+
+            elif section[:11]=='udp_pktf_rx':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"udp_pktf_rx",
+                        "--ip_rx",options['upfrx_ip_rx'],
+                        "--port_rx",options['upfrx_port_rx'],
+                        "--ip_tx",options['upfrx_ip_tx'],
+                        "--port_tx",options['upfrx_port_tx'],
+                        "--ip_wfbs",options['upfrx_ip_wfbs'],
+                        "--port_wfbs",options['upfrx_port_wfbs']]
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
+
+            elif section[:11]=='udp_tcp_fwd':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"udp_tcp_fwd",
+                        "--mpkts",options['utf_mpkts'],
+                        "--ip_rx",options['utf_ip_rx'],
+                        "--port_rx",options['utf_port_rx'],
+                        "--ip_tx",options['utf_ip_tx'],
+                        "--port_tx",options['utf_port_tx']]
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
+
+            elif section[:11]=='tcp_udp_fwd':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"tcp_udp_fwd",
+                        "--mpkts",options['tuf_mpkts'],
+                        "--ip_rx",options['tuf_ip_rx'],
+                        "--port_rx",options['tuf_port_rx'],
+                        "--ip_tx",options['tuf_ip_tx'],
+                        "--port_tx",options['tuf_port_tx']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
