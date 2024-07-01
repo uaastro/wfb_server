@@ -9,18 +9,20 @@ from multiprocessing import Process
 import pymavlink.dialects.v20.ardupilotmega as mavlink2_0
 
 @click.command()
-@click.option('--ip', default="127.0.0.1", help='address of wfb_mon server/default 127.0.0.1')
-@click.option('--port', default=14550, help='port of wfb server/default 14550')
-@click.option('--ip_tx', default="127.0.0.1", help='ip for tx (from which mav command will be send) deffault 127.0.0.1')
-@click.option('--port_tx', default=14814, help='port for tx (from which mav command will be send) 14814')
-@click.option('--chname', default="rx_video", help='stat channel name/default rx_video')
-@click.option('--mp_ip', default="127.0.0.1", help='mavlink proxy ip adress')
-@click.option('--mp_port', default=14500, help='mavlink proxy port')
-@click.option('--id_tgs', default=255, help='target system id')
-@click.option('--id_tgc', default=100, help='target component id')
-@click.option('--id_cmd', default=1058, help='command id')
+@click.option('--ip', default="127.0.0.1", help='address of wfb_mon server def 127.0.0.1')
+@click.option('--port', default=14550, help='port of wfb server def 14550')
+@click.option('--ip_tx', default="127.0.0.1", help='ip for tx (from which mav command will be send) def 127.0.0.1')
+@click.option('--port_tx', default=14814, help='port for tx (from which mav command will be send) def 14814')
+@click.option('--chname', default="rx_video", help='stat channel name def rx_video')
+@click.option('--mp_ip', default="127.0.0.1", help='mavlink proxy ip adress def 127.0.0.1')
+@click.option('--mp_port', default=14500, help='mavlink proxy port def 14500')
+@click.option('--id_tgs', default=255, help='target system id def 255')
+@click.option('--id_tgc', default=100, help='target component id def 100')
+@click.option('--id_cmd', default=1258, help='command id def 1258')
+@click.option('--id_srcs', default=255, help='source system id def 255')
+@click.option('--id_srcc', default=75, help='source component id def 75')
 
-def main (ip,port,ip_tx,port_tx,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd):
+def main (ip,port,ip_tx,port_tx,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd,id_srcs,id_srcc):
 
     global exit_flag
     exit_flag = False
@@ -52,22 +54,22 @@ def main (ip,port,ip_tx,port_tx,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd):
             return None
 
     def get_cmd_ln(d_mav,rssi,qlt,pkts,ch,freq):
-    
+
         command_ln = d_mav.command_long_encode(
-                target_system=id_tgs,        
-                target_component=id_tgc,     
-                command=id_cmd,           
-                confirmation=0,         
-                param1=rssi,               
-                param2=qlt,              
-                param3=pkts,               
-                param4=ch,               
-                param5=freq,               
-                param6=0,               
-                param7=0                
+                target_system=id_tgs,
+                target_component=id_tgc,
+                command=id_cmd,
+                confirmation=0,
+                param1=rssi,
+                param2=qlt,
+                param3=pkts,
+                param4=ch,
+                param5=freq,
+                param6=0,
+                param7=0
             )
         return command_ln
-    
+
     def uprx_print_status(d_uprx_pkt_num, d_uprx_pkts, d_uprx_pkts_lost, d_uprx_qlt,d_uprx_pkt, d_uprx_pkt_lost):
 
         print(f"pkt/s: {d_uprx_pkts:}{d_uprx_pkt} pkt_loss: {d_uprx_pkts_lost:}{d_uprx_pkt_lost} qlt: {d_uprx_qlt}")
@@ -97,18 +99,19 @@ def main (ip,port,ip_tx,port_tx,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd):
             quality = int(100 - (100*d_pkt_lost_s)/(pkts_max+d_pkt_lost_s))
         else:
             quality = 0
-        
+
         d_freq = wifi_ch_freq(int(d_channel))
-        
+
         #print(f"channel: {d_channel} ({d_freq} MHz) band_w: {d_bandwidth} pkt/s: {pkts_max} RSSI: {rssi_avg_max} dBm quality: {quality}")
         command_long = get_cmd_ln(d_mav,float(rssi_avg_max),float(quality),float(pkts_max),float(d_channel),float(d_freq))
         #print(command_long)
         command_long_msg = command_long.pack(d_mav)
         #print(mp_ip,mp_port)
         d_sock.sendto(command_long_msg, (mp_ip,mp_port))
-        
+        #print(command_long_msg)
+
         return
-    #-------------------------------------------------   
+    #-------------------------------------------------
     UDP_IP = ip
     UDP_PORT = port
 
@@ -133,8 +136,9 @@ def main (ip,port,ip_tx,port_tx,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd):
         thread_heartbit = Process(target=heartbit, args=(msg_connect,sock,ip,port))
         thread_heartbit.start()
 
-    mav = mavlink2_0.MAVLink(None)
-    
+    mav = mavlink2_0.MAVLink(None,srcSystem=id_srcs,srcComponent=id_srcc)
+    #print(mav)
+
     ant_data = []
     pkt = 0
     fec_r = 0
@@ -161,8 +165,11 @@ def main (ip,port,ip_tx,port_tx,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd):
 
 
     print("\n")
-    print("WFB-MON-STAT")
-    print("")
+    print("WFB-MON-MAV\n")
+    print(f"ip: {ip} port: {port}\nip_tx: {ip_tx} port_tx: {port_tx}")
+    print(f"mp_ip: {mp_ip} mp_port: {mp_port}\n\nchannel name: {chname}\n")
+    print(f"target system_id: {id_tgs} target component_id: {id_tgc}")
+    print(f"source system_id: {id_srcs} source component_id: {id_srcc}")
     #---------------------------------------------------------------------------------------------------
 
     while not exit_flag:

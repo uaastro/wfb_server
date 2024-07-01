@@ -263,7 +263,12 @@ def main(conf):
                         "--mp_port",options['wfbmm_mp_port'],
                         "--id_tgs",options['wfbmm_id_tgs'],
                         "--id_tgc",options['wfbmm_id_tgc'],
-                        "--id_cmd",options['wfbmm_id_cmd']]
+                        "--id_cmd",options['wfbmm_id_cmd'],
+                        "--id_srcs",options['wfbmm_id_srcs'],
+                        "--id_srcc",options['wfbmm_id_srcc']]
+                
+                wfbmm_id_srcs = 255
+                wfbmm_id_srcc = 75
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
