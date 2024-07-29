@@ -40,9 +40,9 @@ def main (ip,port,chname,shpkt,shrssi):
         hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
         timestamp = time.time()
         while not exit_flag:
-            if (time.time()-timestamp) >= 1 :
-                hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
-                timestamp = time.time()
+            hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
+            time.delay(1)
+
 
     def wifi_ch_freq(channel):
         if 1 <= channel <= 13:

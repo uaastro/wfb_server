@@ -1,0 +1,86 @@
+#!/usr/bin/python3
+import click
+import os
+import time
+import socket
+import sys
+import signal
+from commentedconfigparser import CommentedConfigParser
+from multiprocessing import Process
+import multiprocessing
+
+def rx(exit_flag,wfb_cfg,sock,ch_id,mpkts,cmd_prfx,wlx):
+        
+    config = CommentedConfigParser()
+    config.read(wfb_cfg)
+        
+    while exit_flag.value == 0:
+        data, addr = sock.recvfrom(mpkts)
+        line = data.decode("utf-8")
+        parts = line.split(':')
+        ch = config[str(wlx)]['channel']
+        if parts[0] == str(ch_id):
+            if (str(ch) == str(parts[1])) or ('def' == str(parts[1])):
+                pass
+            else:
+                config[str(wlx)]['channel'] = parts[1]
+                print('conf: ',config[str(wlx)]['channel'])
+                print(wfb_cfg)
+                with open(wfb_cfg,'w') as configfile:
+                    config.write(configfile)
+                exit_flag.value = 1
+                #sys.exit(0)
+
+def tx(exit_flag,wfb_cfg,sock,ip_server,port_server,ch_id,hb_freq,cmd_prfx,wlan):
+    config = CommentedConfigParser()
+    config.read(wfb_cfg)
+    msg = cmd_prfx +':'+ str(ch_id)+':'+config[wlan]['channel']
+    sock.sendto(msg.encode("utf-8"),(ip_server,port_server))
+    while exit_flag.value == 0:
+        sock.sendto(msg.encode("utf-8"),(ip_server, port_server))
+        time.sleep(1/hb_freq)
+
+@click.command()
+@click.option('--wfb_cfg', default='wfb_server.cfg', help='target cfg file, default wfb_server.cfg')
+@click.option('--ip', default="127.0.0.1", help='switcher ip adress def: 127.0.0.1')
+@click.option('--port', default=14420, help='switcher port def: 14420')
+@click.option('--ip_server', default="127.0.0.1", help='channel switcher server def 127.0.0.1')
+@click.option('--port_server', default=14410, help='channel switcher server def 14410')
+@click.option('--ch_id', default=100, help='channel_id def 100')
+@click.option('--hb_freq', default=1, help='heart bit frequency def 20 hb/sec')
+@click.option('--mpkts', default=2048, help='max udp packet size def 2048')
+@click.option('--cmd_prfx', default='chsw', help='command prefix def chsw')
+@click.option('--wlan', default='wlan', help='wlan section to change def wlan')
+
+def main(wfb_cfg,ip,port,ip_server,port_server,ch_id,hb_freq,mpkts,cmd_prfx,wlan):
+
+    wfb_server_dir = os.path.dirname(os.path.abspath(__file__))+"/"
+    wfb_cfg = wfb_server_dir+wfb_cfg
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
+    sock.bind((ip, port))
+
+    manager = multiprocessing.Manager()
+    exit_flag = manager.Value('i',0)
+
+    thread_rx = Process(target=rx, args=(exit_flag,wfb_cfg,sock,ch_id,mpkts,cmd_prfx,wlan))
+    thread_rx.start()
+
+    thread_tx = Process(target=tx, args=(exit_flag,wfb_cfg,sock,ip_server,port_server,ch_id,hb_freq,cmd_prfx,wlan))
+    thread_tx.start()
+
+    def signal_handler(exit_flag,sig, frame):
+        exit_flag.value = 1
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signal_handler)
+
+    print(wfb_cfg,ip,port,ip_server,port_server,ch_id,hb_freq,wlan,'\n')
+
+    thread_rx.join()
+    thread_tx.join()
+
+if __name__ == '__main__':
+    main()
+

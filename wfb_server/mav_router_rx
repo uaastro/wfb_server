@@ -52,7 +52,7 @@ def main(port_r,ip_r,port_mp,ip_mp,ip_rtx,port_rtx):
         while True:
             data, addr = sock_proxy.recvfrom(2048)
 
-            if addr[0] == UDP_IP_MP:
+            if (addr[0] == UDP_IP_MP) and (addr[1] == UDP_PORT_MP):
                 sock_proxy.sendto(data, (UDP_IP_MR_TX, UDP_PORT_MR_TX))
         # --- stat info
         #        pkt_gs +=1

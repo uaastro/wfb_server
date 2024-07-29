@@ -1,0 +1,32 @@
+#!/usr/bin/python3
+import click
+import os
+import time
+import socket
+import sys
+import signal
+from commentedconfigparser import CommentedConfigParser
+from multiprocessing import Process
+
+@click.command()
+@click.option('--ip', default="127.0.0.1", help='switcher ip adress def: 127.0.0.1')
+@click.option('--port', default=14430, help='switcher port def: 14420')
+@click.option('--ip_server', default="127.0.0.1", help='channel switcher server def 127.0.0.1')
+@click.option('--port_server', default=14410, help='channel switcher server def 14410')
+@click.option('--ch_id', default=100, help='channel_id def 100')
+@click.option('--ch', default=56, help='channel_id def 56')
+@click.option('--cmd_prfx', default='set_ch', help='command prefix def chsw')
+
+def main(ip,port,ip_server,port_server,ch_id,ch,cmd_prfx):
+
+    print(ip,port,ip_server,port_server,ch_id,ch,cmd_prfx,'\n')
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((ip, port))
+    msg = f'{cmd_prfx}:{ch_id}:{ch}'
+    print(msg)
+    sock.sendto(msg.encode("utf-8"),(ip_server,port_server))
+
+if __name__ == '__main__':
+    main()
+

@@ -319,6 +319,36 @@ def main(conf):
                 process_list.append(process)
                 process_id[process.pid] = section
 
+            elif section[:11]=='ch_switcher':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"ch_switcher",
+                        "--wfb_cfg",options['chsw_wfb_cfg'],
+                        "--ip",options['chsw_ip'],
+                        "--port",options['chsw_port'],
+                        "--ip_server",options['chsw_ip_server'],
+                        "--port_server",options['chsw_port_server'],
+                        "--ch_id",options['chsw_ch_id'],
+                        "--hb_freq",options['chsw_hb_freq'],
+                        "--mpkts",options['chsw_mpkts'],
+                        "--cmd_prfx",options['chsw_cmd_prfx'],
+                        "--wlan",options['chsw_wlan']]
+                print(udp_xx)
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
+
+            elif section[:9]=='ch_server':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"ch_server",
+                        "--ip",options['chsv_ip'],
+                        "--port",options['chsv_port'],
+                        "--hb_freq",options['chsv_hb_freq'],
+                        "--mpkts",options['chsv_mpkts']]
+                print(udp_xx)
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
+
             elif section[:10]=='init_wlans':
                 options=config[section]
                 subprocess.run(f"{wfb_server_dir}init_wlans --wfb_cfg {options['iwlx_wfb_cfg']} --prfx {options['iwlx_prfx']} --channel {options['iwlx_channel']} --wlans_nmbr {options['iwlx_wlans_nmbr']} --wlan_section {options['iwlx_wlan_section']}",shell=True, check=True)

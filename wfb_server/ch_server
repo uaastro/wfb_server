@@ -1,0 +1,110 @@
+#!/usr/bin/python3
+import multiprocessing
+import time
+import click
+import socket
+import sys
+import signal
+
+def tx(clnts,set_ch,sock,hb_freq):
+    #print('tx is starting...')
+    #print('hd_freq: ',hb_freq)
+    while True:
+        #print('tx',clnts)
+        for cl in clnts:
+            try:
+                msg = cl[1] + ':' + set_ch[cl[1]]
+                pass
+            except:
+                set_ch.update({cl[1] : 'def'})
+                msg = cl[1] + ':' + set_ch[cl[1]] 
+
+            #print(msg, ':', cl[0])
+            sock.sendto(msg.encode("utf-8"),cl[0])
+        time.sleep(1/hb_freq)
+
+def rx(clnts,set_ch,sock,mpkts):
+    #print('rx is starting')
+    while True:
+        data, addr = sock.recvfrom(mpkts)
+        line = data.decode("utf-8")
+        parts = line.split(':')
+        #print('rx',addr,parts)
+        #print('rx',clnts)
+        if parts[0] == 'chsw':
+            cl = (addr,parts[1])
+            #print('rx',cl,'\n')
+            if len(clnts) > 0:
+                cl_not_present = True
+                for cl_i in clnts:
+                    if cl == cl_i:
+                        #print ('rx: cl==cli: ', cl, ':' ,cl_i)
+                        cl_not_present = False
+                    elif cl_i[0] == cl[0]:
+                        #print ('rx: cl[0]==cli[0]: ', cl[0], ':' ,cl_i[0])
+                        print ('client updated: ', cl_i,' -> ', cl)
+                        clnts.remove(cl_i)
+                        clnts.append(cl)
+                        cl_not_present = False
+                        
+                    
+                if cl_not_present:
+                    #print ('rx: cl not present in list', cl)
+                    clnts.append(cl)
+                    print ('new client added: ', cl)
+                        
+            else:
+                #print ('rx: len(clnts) <=0: ', len(clnts))
+                clnts.append(cl)
+                print ('new client added: ', cl)
+    
+        elif parts[0] == 'set_ch':
+            set_ch.update({parts[1] : parts[2]})
+            print('set_ch:', parts)
+            #print('rx: ',parts)
+            #print('rx: ',set_ch)
+
+@click.command()
+@click.option('--ip', default="127.0.0.1", help='server ip adress def: 127.0.0.1')
+@click.option('--port', default=5858, help='server port def: 14420')
+@click.option('--hb_freq', default=1, help='heart bit frequency def 20 hb/sec')
+@click.option('--mpkts', default=2048, help='max udp packet size def 2048')
+
+def main(ip,port,hb_freq,mpkts):
+
+#    print("ch_server had started...")
+#    print(f'server @{ip}:{port} hb_freq:{hb_freq}')
+    
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
+    sock.bind((ip, port))
+
+    manager = multiprocessing.Manager()
+    clnts = manager.list()
+    set_ch = manager.dict()
+
+    tx_process = multiprocessing.Process(target=tx, args=(clnts,set_ch,sock,hb_freq,))
+    rx_process = multiprocessing.Process(target=rx, args=(clnts,set_ch,sock,mpkts,))
+    
+    def signal_handler(sig, frame):
+        #print("process terminate, sock.close")
+        sock.close()
+        tx_process.terminate()
+        rx_process.terminate()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signal_handler)
+
+    
+
+    tx_process.start()
+    rx_process.start()
+
+    print("ch_server had started...")
+    print(f'server @{ip}:{port} hb_freq:{hb_freq}')
+
+    tx_process.join()
+    rx_process.join()
+
+if __name__ == "__main__":
+    main()
