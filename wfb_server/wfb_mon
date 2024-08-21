@@ -41,7 +41,7 @@ def main (ip,port,chname,shpkt,shrssi):
         timestamp = time.time()
         while not exit_flag:
             hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
-            time.delay(1)
+            time.sleep(1)
 
 
     def wifi_ch_freq(channel):

@@ -31,7 +31,7 @@ def main(mpkts,wfbms_ip,wfbms_port,fwd_ip,fwd_port,wfbs_ip,wfbs_port):
         timestamp = time.time()
         while not exit_flag:
             hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
-            time.delay(1)
+            time.sleep(1)
 
     UDP_MAX_PKT_SIZE = mpkts
     UDP_IP = wfbms_ip
