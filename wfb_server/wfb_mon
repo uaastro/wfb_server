@@ -38,7 +38,6 @@ def main (ip,port,chname,shpkt,shrssi):
     def heartbit(msg,hb_sock,hb_ip,hb_port):
         global exit_flag
         hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
-        timestamp = time.time()
         while not exit_flag:
             hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
             time.sleep(1)
