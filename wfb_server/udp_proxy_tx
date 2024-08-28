@@ -1,19 +1,20 @@
 #!/usr/bin/python3
 import socket
 import struct
-
+import time
 import click
 
 @click.command()
 @click.option('--mpkts', default=2048, help='udp max pkt size def: 2048')
-@click.option('--ip_rx', default='127.0.0.1', help='ip of sorce stream def: 127.0.0.1')
-@click.option('--port_rx', default=5600, help='port of source stream def: 5700')
-@click.option('--ip_tx', default='127.0.0.1', help='ip of destination host def: 127.0.0.1')
-@click.option('--port_tx', default=5680, help='first port of destination hosts def: 5680')
-@click.option('--ptxn', default=1, help='numder of tx ports [port_tx+1...port_tx+n] def: 1')
-@click.option('--rpn', default=1, help='numder of repeats for each tx ports def: 1')
+@click.option('--ip_rx', default='127.0.0.1', help='ip of sorce stream / def: 127.0.0.1')
+@click.option('--port_rx', default=5600, help='port of source stream / def: 5700')
+@click.option('--ip_tx', default='127.0.0.1', help='ip of destination host / def: 127.0.0.1')
+@click.option('--port_tx', default=5680, help='first port of destination hosts / def: 5680')
+@click.option('--ptxn', default=1, help='numder of tx ports [port_tx+1...port_tx+n] / def: 1')
+@click.option('--rpn', default=1, help='numder of repeats for each tx ports / def: 1')
+@click.option('--dl', default=0, help='add delay in miliseconds before each packet will be send / def: 0')
 
-def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn,rpn):
+def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn,rpn,dl):
     
     UDP_MAX_PKT_SIZE = mpkts
     UDP_IP_RX= ip_rx
@@ -41,6 +42,7 @@ def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn,rpn):
         print(f'tx: {udp_stream["ip"]} : {udp_stream["port"]}')
     
     print(f"rpn: {rpn}")
+    print(f"dl: {dl}")
 
     while True:
         
@@ -52,6 +54,7 @@ def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn,rpn):
         for udp_stream in udp_streams:
             for k in range(rpn):
                 sock_tx.sendto(packet, (udp_stream["ip"], udp_stream["port"]))
+                time.sleep(dl/1000)
 
 
 if __name__ == '__main__':

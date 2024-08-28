@@ -81,11 +81,26 @@ def main(conf):
         wfb_mon_port = int(config['wfb_server']['wfb_mon_port'])
         wfb_server_ip = config['wfb_server']['wfb_server_ip']
         wfb_server_port = int(config['wfb_server']['wfb_server_port'])
+        wfb_server_version_cfg = config['wfb_server']['wfb_server_version']
     except:
         wfb_mon_ip = '127.0.0.1'
         wfb_mon_port = 14550
         wfb_server_ip = '127.0.0.1'
         wfb_server_port = 14650
+
+    wfb_server_version = '2.8.5'
+    
+    print("starting wfb-server...\n")
+    print(f"wfb_mon_ip: {wfb_mon_ip}")
+    print(f"wfb_mon_port: {wfb_mon_port}")
+    print(f"wfb_server_ip: {wfb_server_ip}")
+    print(f"wfb_server_port: {wfb_server_port}")
+    print(f"wfb_server_version: {wfb_server_version}")
+    print(f"wfb_server_version_cfg: {wfb_server_version_cfg}")
+         
+        
+        
+        
     
     sock.bind((wfb_server_ip,wfb_server_port))
     process_heartbit = Process(target=heartbit, args=(sock,wfb_server_ip,wfb_server_port,wfb_mon_ip,wfb_mon_port))
@@ -174,7 +189,8 @@ def main(conf):
                         "--port_rx",options['uptx_port_rx'],
                         "--mpkts",options['uptx_mpkts'],
                         "--ptxn",options['uptx_ptxn'],
-                        "--rpn",options['uptx_rpn']]
+                        "--rpn",options['uptx_rpn'],
+                        "--dl",options['uptx_dl']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -202,7 +218,8 @@ def main(conf):
                         "--port_rx",options['upfwd_port_rx'],
                         "--mpkts",options['upfwd_mpkts'],
                         "--ptxn",options['upfwd_ptxn'],
-                        "--rpn",options['upfwd_rpn']]
+                        "--rpn",options['upfwd_rpn'],
+                        "--dl",options['upfwd_dl']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
