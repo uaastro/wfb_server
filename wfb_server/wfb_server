@@ -245,6 +245,20 @@ def main(conf):
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section 
+            
+            elif section[:11]=='wfb_mon_fwd':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"wfb_mon_fwd",
+                        "--mpkts",options['wfbmf_mpkts'],
+                        "--wfbms_ip",options['wfbmf_wfbms_ip'],
+                        "--wfbms_port",options['wfbmf_wfbms_port'],
+                        "--fwd_ip",options['wfbmf_fwd_ip'],
+                        "--fwd_port",options['wfbmf_fwd_port'],
+                        "--wfbs_ip",options['wfbmf_wfbs_ip'],
+                        "--wfbs_port",options['wfbmf_wfbs_port']]
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section 
 
             elif section[:13]=='mav_router_rx':
                 options=config[section]
