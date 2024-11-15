@@ -88,7 +88,7 @@ def main(conf):
         wfb_server_ip = '127.0.0.1'
         wfb_server_port = 14650
 
-    wfb_server_version = '2.8.5'
+    wfb_server_version = '2.8.6'
     
     print("starting wfb-server...\n")
     print(f"wfb_mon_ip: {wfb_mon_ip}")
@@ -227,9 +227,10 @@ def main(conf):
             elif section[:11]=='uart_to_udp':
                 options=config[section]
                 udp_xx=[wfb_server_dir+"uart_to_udp",
-                        "--uart",options['uart'],
-                        "--brate",options['brate'],
-                        "--udps_port",options['udps_port']]
+                        "--uart",options['utu_uart'],
+                        "--brate",options['utu_brate'],
+                        "--udps_port",options['utu_udps_port'],
+                        "--mode",options['utu_mode']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section

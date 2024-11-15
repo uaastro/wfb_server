@@ -259,7 +259,7 @@ def main (ip,port,chname,shpkt,shrssi):
             if parts[0] == chname:
                 if parts[0][:2] == 'rx':
                     if parts[2] == "ANT":
-                        live.console.print(line.split())
+                        live.console.log(line.split())
                         ant_num = int(parts[3])
                         pkts, rssi_min, rssi_avg, rssi_max = map(int, parts[4].split(":"))
                         for i in range(wlan_number*2):
@@ -270,7 +270,7 @@ def main (ip,port,chname,shpkt,shrssi):
                                 ant_data[i]["rssi_max"] = rssi_max
                         #live.update(print_status(pkt, fec_r, pkts, pkt_lost, d_err, fec_r_s, pkt_lost_s, d_err_s,ant_data))
                     elif parts[2] == "PKT":
-                        live.console.print(line.split())
+                        live.console.log(line.split())
                         pkts_1, zero, pkts, fec_r_s, pkt_lost_s, d_err_s = map(int, parts[3].split(":"))
                         pkt+= pkts
                         fec_r+= fec_r_s 
@@ -287,7 +287,7 @@ def main (ip,port,chname,shpkt,shrssi):
                         wlans_info = parts[4].split(":")
                         wlan_number = int(wlans_info[0])
                 elif parts[0][:12] == "udp_proxy_rx":
-                    live.console.print(line.split())
+                    live.console.log(line.split)
                     uprx_pkt_num, uprx_pkts, uprx_pkts_lost, uprx_qlt = map(int, parts[2].split(":"))
                     uprx_pkt += uprx_pkts 
                     uprx_pkt_lost += uprx_pkts_lost
