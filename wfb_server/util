@@ -1,0 +1,5 @@
+#!/usr/bin/python3
+
+print ("this is empty util module")
+while True:
+    pass

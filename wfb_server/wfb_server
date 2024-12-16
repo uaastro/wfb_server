@@ -88,7 +88,7 @@ def main(conf):
         wfb_server_ip = '127.0.0.1'
         wfb_server_port = 14650
 
-    wfb_server_version = '2.8.6'
+    wfb_server_version = '2.8.7'
     
     print("starting wfb-server...\n")
     print(f"wfb_mon_ip: {wfb_mon_ip}")
@@ -364,7 +364,6 @@ def main(conf):
                         "--mpkts",options['chsw_mpkts'],
                         "--cmd_prfx",options['chsw_cmd_prfx'],
                         "--wlan",options['chsw_wlan']]
-                print(udp_xx)
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -376,7 +375,16 @@ def main(conf):
                         "--port",options['chsv_port'],
                         "--hb_freq",options['chsv_hb_freq'],
                         "--mpkts",options['chsv_mpkts']]
-                print(udp_xx)
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
+            
+            elif section[:4]=='util':
+                options=config[section]
+                udp_xx=[options['util_exec']]
+                param_list = options['util_param'].split(' ') 
+                if param_list != ['']:
+                    udp_xx += param_list 
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
