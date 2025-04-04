@@ -31,8 +31,10 @@ def fec_decode(d_k,d_m,bloks: list,b_indexes: list) -> list:
 @click.option('--port_rx', default=7700, help='port of source stream def: 7700')
 @click.option('--ip_tx', default='127.0.0.1', help='ip of destination host def: 127.0.0.1')
 @click.option('--port_tx', default=7800, help='port of destination hosts def: 7800')
+@click.option('--ip_wfbs', default='127.0.0.1', help='wfb_server_ip')
+@click.option('--port_wfbs', default=14650, help='wfb_server port')
 
-def main(mpkts,ip_rx,port_rx,ip_tx,port_tx):
+def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ip_wfbs,port_wfbs):
 
     #--init--
     sock_tx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
