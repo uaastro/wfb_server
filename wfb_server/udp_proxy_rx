@@ -14,8 +14,10 @@ import time
 @click.option('--port_rx', default=5600, help='port of source host')
 @click.option('--port_wfbs', default=14650, help='wfb_server port')
 @click.option('--ip_wfbs', default='127.0.0.1', help='wfb_server_ip')
+@click.option('--mode', default=0, help='mode 0 aggregator (default) mode 1 forwarder')
+@click.option('--alrt_max', default=10, help='max number of alert pkt')
 
-def main(mpkts,ip_tx,port_tx,ip_rx,port_rx,port_wfbs,ip_wfbs):
+def main(mpkts,ip_tx,port_tx,ip_rx,port_rx,port_wfbs,ip_wfbs, mode, alrt_max):
 
     UDP_MAX_PKT_SIZE = mpkts
     UDP_IP_TX= ip_tx
@@ -27,7 +29,7 @@ def main(mpkts,ip_tx,port_tx,ip_rx,port_rx,port_wfbs,ip_wfbs):
     link_id = 1
     pkt_num = 0
     rs_alrt = 0
-    rs_alrt_max = 10
+    rs_alrt_max = alrt_max
     pkt_lost=0
     pkts = 0
     time_stamp=time.time()
@@ -46,7 +48,10 @@ def main(mpkts,ip_tx,port_tx,ip_rx,port_rx,port_wfbs,ip_wfbs):
         PACKET_SIZE = len(packet)
         link_id, packet_number, data= struct.unpack("!II"+str((PACKET_SIZE - 4 - 4))+"s", packet)
         if packet_number > pkt_num:
-            sock_tx.sendto(data,(UDP_IP_TX, UDP_PORT_TX))
+            if mode == 0:
+                sock_tx.sendto(data,(UDP_IP_TX, UDP_PORT_TX))
+            elif mode == 1:
+                sock_tx.sendto(packet,(UDP_IP_TX, UDP_PORT_TX))
             #stat data:
             pkt_lost+=packet_number-pkt_num-1
             pkts+=1

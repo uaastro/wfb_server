@@ -88,7 +88,7 @@ def main(conf):
         wfb_server_ip = '127.0.0.1'
         wfb_server_port = 14650
 
-    wfb_server_version = '2.8.8'
+    wfb_server_version = '2.8.9'
     
     print("starting wfb-server...\n")
     print(f"wfb_mon_ip: {wfb_mon_ip}")
@@ -204,7 +204,9 @@ def main(conf):
                         "--port_rx",options['uprx_port_rx'],
                         "--mpkts",options['uprx_mpkts'],
                         "--ip_wfbs",options['uprx_ip_wfbs'],
-                        "--port_wfbs",options['uprx_port_wfbs']]
+                        "--port_wfbs",options['uprx_port_wfbs'],
+                        "--mode",options['uprx_mode'],
+                        "--alrt_max",options['uprx_alrt_max']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -219,7 +221,8 @@ def main(conf):
                         "--mpkts",options['upfwd_mpkts'],
                         "--ptxn",options['upfwd_ptxn'],
                         "--rpn",options['upfwd_rpn'],
-                        "--dl",options['upfwd_dl']]
+                        "--dl",options['upfwd_dl'],
+                        "--mode",options['upfwd_mode']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -278,7 +281,8 @@ def main(conf):
                 options=config[section]
                 udp_xx=[wfb_server_dir+"mav_router_tx",
                         "--ip_r",options['mvrtx_ip_r'],
-                        "--port_r",options['mvrtx_port_r']]
+                        "--port_r",options['mvrtx_port_r'],
+                        "--mode",options['mvrtx_mode']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -403,6 +407,17 @@ def main(conf):
                         "--port_tx",options['ufrx_port_tx'],
                         "--port_wfbs",options['ufrx_port_wfbs'],
                         "--ip_wfbs",options['ufrx_ip_wfbs']]
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
+                
+            elif section[:11]=='udp_to_uart':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"dp_to_uar",
+                        "--port_rx",options['udtu_port_rx'],
+                        "--ip_rx",options['udtu_ip_rx'],
+                        "--uart",options['udtu_uart'],
+                        "--brate",options['udtu_brate']]
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section

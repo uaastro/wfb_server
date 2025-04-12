@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 import socket
 import serial
 import click
@@ -10,8 +9,9 @@ import click
 @click.command()
 @click.option('--port_r', default=14785, help='mav_router_tx port')
 @click.option('--ip_r', default='0.0.0.0', help='mav_router_tx ip')
+@click.option('--mode', default=0, help='mode 0 (default) mirrow, mode 1 strip')
 
-def main(port_r,ip_r):
+def main(port_r,ip_r,mode):
 
     UDP_IP_ROUTER = ip_r
     UDP_PORT_ROUTER = port_r
@@ -41,10 +41,20 @@ def main(port_r,ip_r):
         #pkt_gs = 0
         #time_ls = time.time()
         print ("mav_router_tx loop starting...\n")
+        ser_num = 1
         while True:
             data, addr = sock_proxy.recvfrom(2048)
-            ser_1.write(data)
-            ser_2.write(data)
+            if mode == 0:
+                ser_1.write(data)
+                ser_2.write(data)
+            elif mode == 1:
+                if ser_num == 1:
+                    ser_1.write(data)
+                    ser_num = 2
+                elif ser_num == 2:
+                    ser_2.write(data)
+                    ser_num = 1
+        
         # --- stat info
         #    pkt_gs +=1
 

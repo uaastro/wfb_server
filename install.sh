@@ -8,6 +8,7 @@ pip install rich
 pip install click
 pip install commented-configparser
 pip install pymavlink
+pip install zfec
 
 # Build
 make

@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 import socket
-import struct
 import time
 import click
 
@@ -13,8 +12,9 @@ import click
 @click.option('--ptxn', default=1, help='numder of tx ports [port_tx+1...port_tx+n] def: 1')
 @click.option('--rpn', default=1, help='numder of repeats for each tx ports def: 1')
 @click.option('--dl', default=0, help='add delay in miliseconds before each packet will be send / def: 0')
+@click.option('--mode', default=0, help='mode 0 (default) mirrow, mode 1 strip')
 
-def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn,rpn,dl):
+def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn,rpn,dl,mode):
     
     UDP_MAX_PKT_SIZE = mpkts
     UDP_IP_RX= ip_rx
@@ -40,16 +40,25 @@ def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn,rpn,dl):
     
     print(f"rpn: {rpn}")
     print(f"dl: {dl}")
+    stm_index = 0
 
     while True:
         
         data, addr = sock_rx.recvfrom(UDP_MAX_PKT_SIZE)
         PACKET_SIZE = len(data)
-
-        for udp_stream in udp_streams:
+        if mode == 0:
+            for udp_stream in udp_streams:
+                for k in range(rpn):
+                    sock_tx.sendto(data, (udp_stream["ip"], udp_stream["port"]))
+                    time.sleep(dl/1000)
+        elif mode == 1:
+            udp_stream = udp_streams[stm_index]
             for k in range(rpn):
                 sock_tx.sendto(data, (udp_stream["ip"], udp_stream["port"]))
                 time.sleep(dl/1000)
+            stm_index += 1
+            if stm_index >= ptxn:
+                stm_index = 0
 
 
 if __name__ == '__main__':
