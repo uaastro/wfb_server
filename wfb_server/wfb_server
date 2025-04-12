@@ -413,7 +413,7 @@ def main(conf):
                 
             elif section[:11]=='udp_to_uart':
                 options=config[section]
-                udp_xx=[wfb_server_dir+"dp_to_uar",
+                udp_xx=[wfb_server_dir+"udp_to_uart",
                         "--port_rx",options['udtu_port_rx'],
                         "--ip_rx",options['udtu_ip_rx'],
                         "--uart",options['udtu_uart'],
