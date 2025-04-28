@@ -287,7 +287,7 @@ def main (ip,port,chname,shpkt,shrssi):
                         wlans_info = parts[4].split(":")
                         wlan_number = int(wlans_info[0])
                 elif parts[0][:12] == "udp_proxy_rx":
-                    live.console.log(line.split)
+                    live.console.log(line.split())
                     uprx_pkt_num, uprx_pkts, uprx_pkts_lost, uprx_qlt = map(int, parts[2].split(":"))
                     uprx_pkt += uprx_pkts 
                     uprx_pkt_lost += uprx_pkts_lost
