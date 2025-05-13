@@ -1,0 +1,26 @@
+#!/usr/bin/python3
+
+import socket
+import time
+import struct
+import click
+
+
+@click.command()
+@click.option('--ip_tx', default="127.0.0.1", help='ip to send packets')
+@click.option('--port_tx', default=15800, help='udp port')
+@click.option('--dl', default=1000, help='beacon delay in ms')
+
+def main(ip_tx,port_tx,dl):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sleep_dl= dl/1000
+    while True:
+        beacon_time = time.time()
+        packet = struct.pack("!d",beacon_time)
+        sock.sendto(packet, (ip_tx, port_tx))
+        #delta_t= time.time()-beacon_time
+        #print (delta_t)
+        time.sleep(sleep_dl)
+
+if __name__ == '__main__':
+    main()

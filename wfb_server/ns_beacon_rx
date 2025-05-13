@@ -1,0 +1,47 @@
+#!/usr/bin/python3
+import socket
+import struct
+import click
+import time
+
+
+@click.command()
+@click.option('--mpkts', default=2048, help='udp max pkt size')
+@click.option('--ip_rx', default='0.0.0.0', help='ip_rx def: 0.0.0.0')
+@click.option('--port_rx', default=15700, help='port_rx def: 15700')
+@click.option('--ip_wfbs', default='127.0.0.1', help='wfb_server_ip')
+@click.option('--port_wfbs', default=14650, help='wfb_server port')
+@click.option('--nmb_sync_pkt', default=10, help="number of sync packet def: 10")
+
+
+def main(mpkts,ip_rx,port_rx,ip_wfbs, port_wfbs, nmb_sync_pkt):
+
+    sock_rx= socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock_rx.bind((ip_rx,port_rx))
+
+    print("ns_beacin_rx started...")
+    print(f"rx: {ip_rx} : {port_rx}")
+    #print(f"tx: {ip_tx} : {port_tx}")
+    print(f"nmb_sync_pkt: {nmb_sync_pkt}\n")
+    print(f"ip_wfbs: {ip_wfbs}")
+    print(f"port_wfbs: {port_wfbs}")
+
+    vc = 299700000 
+    packet, addr = sock_rx.recvfrom(mpkts) 
+    beacon_time= struct.unpack("!d", packet)
+    delta_t = time.time() - beacon_time
+    
+    while True:
+        packet, addr = sock_rx.recvfrom(mpkts) 
+        beacon_time= struct.unpack("!d", packet)
+        rx_time = time.time()
+        delta_t2 = rx_time - (delta_t+beacon_time)
+        dist = vc*delta_t2
+        print(dist)
+        
+        #sock_tx.sendto(stat_inf.encode("utf-8"),(ip_wfbs, port_wfbs))
+
+if __name__ == '__main__':
+    main()
+
+
