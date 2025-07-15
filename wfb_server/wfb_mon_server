@@ -4,6 +4,8 @@ import socket
 import struct
 import click
 import sys
+import atexit
+import signal
 
 
 @click.command()
@@ -21,6 +23,20 @@ def main(mpkts,wfbms_ip,wfbms_port,wfbs_ip,wfbs_port):
             if cl_addr == cl:
                 return True
         return res
+    
+    def cleanup():
+        try:
+            sock.close()
+        except Exception as e:
+            print(f"{e}")
+
+    def signal_handler(sig, frame):
+        print(f"{sig}: process terminated...")
+        sys.exit(0)
+    
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, signal_handler)    
+    signal.signal(signal.SIGTERM, signal_handler)
 
     UDP_MAX_PKT_SIZE = mpkts
     wfb_mon_server_ip = wfbms_ip
@@ -30,6 +46,7 @@ def main(mpkts,wfbms_ip,wfbms_port,wfbs_ip,wfbs_port):
     clients = []
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind((wfb_mon_server_ip,wfb_mon_server_port))
 
     print("wfb_mon_server started...")

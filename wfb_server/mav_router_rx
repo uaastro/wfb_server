@@ -9,8 +9,8 @@ import click
 @click.command()
 @click.option('--port_r', default=14785, help='mav_router_rx port')
 @click.option('--ip_r', default='0.0.0.0', help='mav_router_rx ip')
-@click.option('--port_mp', default=14500, help='misson planer port')
-@click.option('--ip_mp', default='192.168.144.100', help='mission planer ip')
+@click.option('--port_mp', default=14500, help='mav proxy port')
+@click.option('--ip_mp', default='192.168.144.100', help='mav porxy ip')
 @click.option('--ip_rtx', default='192.168.144.125', help='mav_router_tx ip')
 @click.option('--port_rtx', default=14785, help='mav_router_tx port')
 
