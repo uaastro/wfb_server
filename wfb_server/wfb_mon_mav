@@ -58,9 +58,9 @@ def main (ip,port,ip_tx,port_tx,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd,id_src
             # for channels from 1 to 13 @ 2,4 GHz
             frequency = 2407 + (channel - 1) * 5
             return frequency
-        elif 36 <= channel <= 181:
+        elif 15 <= channel:
             # for channels from 36 to 165 @ 5170-5835 MHz
-            frequency = 5170 + (channel - 36) * 5
+            frequency = 5000 + (channel) * 5
             return frequency
         else:
             return None
