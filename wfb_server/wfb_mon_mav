@@ -3,6 +3,7 @@ import re
 import time
 import socket
 import signal
+import atexit
 import sys
 import click
 from multiprocessing import Process
@@ -27,10 +28,23 @@ def main (ip,port,ip_tx,port_tx,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd,id_src
     global exit_flag
     exit_flag = False
 
+    def cleanup():
+        try:
+            sock.close()
+            sock_tx.close()
+        except Exception as e:
+            print(f"{e}")
+
     def signal_handler(sig, frame):
         global exit_flag
         exit_flag = True
+        print(f"{sig}: process terminated...")
         sys.exit(0)
+    
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, signal_handler)    
+    signal.signal(signal.SIGTERM, signal_handler)
+
 
     def heartbit(msg,hb_sock,hb_ip,hb_port):
         global exit_flag
@@ -113,12 +127,13 @@ def main (ip,port,ip_tx,port_tx,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd,id_src
     UDP_IP = ip
     UDP_PORT = port
 
-    signal.signal(signal.SIGINT, signal_handler)
+    #signal.signal(signal.SIGINT, signal_handler)
 
     msg_connect = 'wfb_mon:connect'
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock_tx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock_tx.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock_tx.bind((ip_tx, port_tx))
 
     ext = False

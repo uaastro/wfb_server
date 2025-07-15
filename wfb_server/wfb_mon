@@ -48,7 +48,7 @@ def main (ip,port,chname,shpkt,shrssi):
             # for channels from 1 to 13 @ 2,4 GHz
             frequency = 2407 + (channel - 1) * 5
             return frequency
-        elif 36 <= channel <= 181:
+        elif 15 <= channel :
             # for channels from 15 to 200 @ 5075-6000 MHz
             frequency = 5000 + (channel) * 5
             return frequency
