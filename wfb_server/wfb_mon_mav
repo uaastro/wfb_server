@@ -31,15 +31,15 @@ def main (ip,port,ip_tx,port_tx,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd,id_src
     
     def cleanup():
         try:
-            if thread_heartbit != None:
+            if thread_heartbit is not None:
                 thread_heartbit.terminate()
                 thread_heartbit.join(timeout=0.01)
                 if thread_heartbit.is_alive():
                     thread_heartbit.kill()
                     thread_heartbit.join()
-            if sock != None:
+            if sock is not None:
                 sock.close()
-            if sock_tx != None:
+            if sock_tx is not None:
                 sock_tx.close()
             
         except Exception as e:

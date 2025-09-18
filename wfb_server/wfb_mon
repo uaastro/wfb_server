@@ -33,13 +33,13 @@ def main (ip,port,chname,shpkt,shrssi):
 
     def cleanup():
         try:
-            if thread_heartbit != None:
+            if thread_heartbit is not None:
                 thread_heartbit.terminate()
                 thread_heartbit.join(timeout=0.01)
                 if thread_heartbit.is_alive():
                     thread_heartbit.kill()
                     thread_heartbit.join()
-            if sock != None:
+            if sock is not None:
                 sock.close()
                 
         except Exception as e:

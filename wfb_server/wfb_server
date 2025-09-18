@@ -22,14 +22,14 @@ def main(conf):
     process_list = []
 
     def subprocess_kill(pl):
-        if process_heartbit != None:
+        if process_heartbit is not None:
             process_heartbit.terminate()
             process_heartbit.join(timeout=0.01)
             if process_heartbit.is_alive():
                 process_heartbit.kill()
                 process_heartbit.join()
             print('process was terminated: ', process_heartbit)
-        if pl != None:
+        if pl is not None:
             for p in pl:
                 try:
                     p.terminate()
@@ -45,7 +45,7 @@ def main(conf):
 
     def signal_handler(sig, frame):
         subprocess_kill(process_list)
-        if sock != None:
+        if sock is not None:
                 sock.close()
         print ('wfb_server was terminated...')
         sys.exit(0)
