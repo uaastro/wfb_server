@@ -3,6 +3,8 @@
 import socket
 import time
 import struct
+import signal
+import atexit
 
 from rich.console import Console
 from rich.theme import Theme
@@ -29,7 +31,24 @@ def main(ip, port,mpksize,mode):
     UDP_PORT = port
     MAX_PACKET_SIZE = mpksize
     MODE=mode
-    
+
+    sock = None
+
+    def cleanup():
+        try:
+            if sock is not None:
+                sock.close()
+        except Exception as e:
+            console = Console()
+            console.print(f"{e}")
+
+    def signal_handler(sig, frame):
+        cleanup()
+        sys.exit(0)
+
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
     def staus_line(link_id,pkt,pkts,delay,pksize,pk_lost) -> Table:
         #table = Table(expand=True,show_header=False,highlight=
@@ -94,7 +113,10 @@ def main(ip, port,mpksize,mode):
                             live.console.print()
                             live.console.log("pkt: ",i,"\n")
                             break  
-                    packet, addr = sock.recvfrom(MAX_PACKET_SIZE)
+                    try:
+                        packet, addr = sock.recvfrom(MAX_PACKET_SIZE)
+                    except OSError:
+                        break
                     PACKET_SIZE=len(packet)
                     time_cp=time.time()
                     link_id, packet_number, send_time = struct.unpack("!IId", packet[:16])
@@ -130,7 +152,10 @@ def main(ip, port,mpksize,mode):
                             live.console.log("pkt: ",i,"\n")
                             live.console.log("",)
                             break 
-                    packet, addr = sock.recvfrom(MAX_PACKET_SIZE)
+                    try:
+                        packet, addr = sock.recvfrom(MAX_PACKET_SIZE)
+                    except OSError:
+                        break
                     PACKET_SIZE=len(packet)
                     
                     stream_size+=PACKET_SIZE
@@ -158,6 +183,7 @@ def main(ip, port,mpksize,mode):
             console.log("[bold red]Error:[/] undefine mode, use --help for more info")
                     
     finally:
+        cleanup()
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)  # return terminal settings
         
 if __name__ == '__main__':

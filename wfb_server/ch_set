@@ -5,6 +5,7 @@ import time
 import socket
 import sys
 import signal
+import atexit
 from commentedconfigparser import CommentedConfigParser
 from multiprocessing import Process
 
@@ -21,12 +22,30 @@ def main(ip,port,ip_server,port_server,ch_id,ch,cmd_prfx):
 
     print(ip,port,ip_server,port_server,ch_id,ch,cmd_prfx,'\n')
 
+    sock = None
+
+    def cleanup():
+        try:
+            if sock is not None:
+                sock.close()
+        except Exception as e:
+            print(e)
+
+    def signal_handler(sig, frame):
+        cleanup()
+        sys.exit(0)
+
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((ip, port))
     msg = f'{cmd_prfx}:{ch_id}:{ch}'
     print(msg)
     sock.sendto(msg.encode("utf-8"),(ip_server,port_server))
+    sock.close()
+    sock = None
 
 if __name__ == '__main__':
     main()
-

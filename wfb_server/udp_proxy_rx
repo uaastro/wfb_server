@@ -4,6 +4,8 @@ import struct
 import click
 import sys
 import time
+import signal
+import atexit
 
 
 @click.command()
@@ -34,45 +36,69 @@ def main(mpkts,ip_tx,port_tx,ip_rx,port_rx,port_wfbs,ip_wfbs, mode, alrt_max):
     pkts = 0
     time_stamp=time.time()
 
-    sock_rx= socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock_rx = None
+    sock_tx = None
+
+    def cleanup():
+        for s in (sock_rx, sock_tx):
+            try:
+                if s is not None:
+                    s.close()
+            except Exception as e:
+                print(e)
+
+    def signal_handler(sig, frame):
+        cleanup()
+        sys.exit(0)
+
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    sock_rx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock_rx.bind((UDP_IP_RX,UDP_PORT_RX))
 
-    sock_tx=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock_tx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     print("udp_proxy_rx started...")
     print(f"rx: {UDP_IP_RX} : {UDP_PORT_RX}")
     print(f"tx: {UDP_IP_TX} : {UDP_PORT_TX}")
 
-    while True:
-        packet, addr = sock_rx.recvfrom(UDP_MAX_PKT_SIZE) 
-        PACKET_SIZE = len(packet)
-        link_id, packet_number, data= struct.unpack("!II"+str((PACKET_SIZE - 4 - 4))+"s", packet)
-        if packet_number > pkt_num:
-            if mode == 0:
-                sock_tx.sendto(data,(UDP_IP_TX, UDP_PORT_TX))
-            elif mode == 1:
-                sock_tx.sendto(packet,(UDP_IP_TX, UDP_PORT_TX))
-            #stat data:
-            pkt_lost+=packet_number-pkt_num-1
-            pkts+=1
-            #---------------------------------
-            pkt_num=packet_number
-            rs_alrt=0
-        else:
-            rs_alrt +=1
-            if rs_alrt >= rs_alrt_max:
+    try:
+        while True:
+            try:
+                packet, addr = sock_rx.recvfrom(UDP_MAX_PKT_SIZE)
+            except OSError:
+                break
+            PACKET_SIZE = len(packet)
+            link_id, packet_number, data= struct.unpack("!II"+str((PACKET_SIZE - 4 - 4))+"s", packet)
+            if packet_number > pkt_num:
+                if mode == 0:
+                    sock_tx.sendto(data,(UDP_IP_TX, UDP_PORT_TX))
+                elif mode == 1:
+                    sock_tx.sendto(packet,(UDP_IP_TX, UDP_PORT_TX))
+                #stat data:
+                pkt_lost+=packet_number-pkt_num-1
+                pkts+=1
+                #---------------------------------
                 pkt_num=packet_number
-                rs_alrt = 0
+                rs_alrt=0
+            else:
+                rs_alrt +=1
+                if rs_alrt >= rs_alrt_max:
+                    pkt_num=packet_number
+                    rs_alrt = 0
 
-        if (time.time() - time_stamp) >= 1:
-            qlt = int((pkts*100)/(pkts+pkt_lost))
-            stat_inf = f'udp_proxy_rx PKT {pkt_num}:{pkts}:{pkt_lost}:{qlt}'
-            sock_tx.sendto(stat_inf.encode("utf-8"),(ip_wfbs, port_wfbs))
-            time_stamp = time.time()
-            pkt_lost = 0
-            pkts = 0
+            if (time.time() - time_stamp) >= 1:
+                total = pkts + pkt_lost
+                qlt = int((pkts*100)/total) if total else 0
+                stat_inf = f'udp_proxy_rx PKT {pkt_num}:{pkts}:{pkt_lost}:{qlt}'
+                sock_tx.sendto(stat_inf.encode("utf-8"),(ip_wfbs, port_wfbs))
+                time_stamp = time.time()
+                pkt_lost = 0
+                pkts = 0
+    finally:
+        cleanup()
 
 if __name__ == '__main__':
     main()
-
-

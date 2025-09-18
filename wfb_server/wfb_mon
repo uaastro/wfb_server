@@ -4,6 +4,7 @@ import re
 import time
 import socket
 import signal
+import atexit
 import sys
 
 from multiprocessing import Process
@@ -27,18 +28,35 @@ import click
 
 def main (ip,port,chname,shpkt,shrssi):
 
-    global exit_flag
-    exit_flag = False
+    thread_heartbit = None
+    sock = None
+
+    def cleanup():
+        try:
+            if thread_heartbit != None:
+                thread_heartbit.terminate()
+                thread_heartbit.join(timeout=0.01)
+                if thread_heartbit.is_alive():
+                    thread_heartbit.kill()
+                    thread_heartbit.join()
+            if sock != None:
+                sock.close()
+                
+        except Exception as e:
+            print(f"{e}")
 
     def signal_handler(sig, frame):
-        global exit_flag
-        exit_flag = True
+        cleanup()
+        print(f"{sig}: process terminated...")
         sys.exit(0)
+    
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, signal_handler)    
+    signal.signal(signal.SIGTERM, signal_handler)
 
     def heartbit(msg,hb_sock,hb_ip,hb_port):
-        global exit_flag
         hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
-        while not exit_flag:
+        while True:
             hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
             time.sleep(1)
 
@@ -197,8 +215,6 @@ def main (ip,port,chname,shpkt,shrssi):
     UDP_IP = ip
     UDP_PORT = port
     
-    signal.signal(signal.SIGINT, signal_handler)
-
     msg_connect = 'wfb_mon:connect'
     
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -250,7 +266,7 @@ def main (ip,port,chname,shpkt,shrssi):
     
     with Live(print_status(), refresh_per_second=4) as live:
         
-        while not exit_flag:
+        while True:
             
             data, addr = sock.recvfrom(2048) 
             line = data.decode("utf-8")

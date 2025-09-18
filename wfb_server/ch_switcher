@@ -70,11 +70,25 @@ def main(wfb_cfg,ip,port,ip_server,port_server,ch_id,hb_freq,mpkts,cmd_prfx,wlan
     thread_tx = Process(target=tx, args=(exit_flag,wfb_cfg,sock,ip_server,port_server,ch_id,hb_freq,cmd_prfx,wlan))
     thread_tx.start()
 
-    def signal_handler(exit_flag,sig, frame):
+    def signal_handler(sig, frame):
         exit_flag.value = 1
+        thread_tx.terminate()
+        thread_tx.join(timeout=0.01)
+        if thread_tx.is_alive():
+            thread_tx.kill()
+            thread_tx.join()
+        
+        thread_rx.terminate()
+        thread_rx.join(timeout=0.01)
+        if thread_rx.is_alive():
+            thread_rx.kill()
+            thread_rx.join()
+        
+        sock.close()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
     print(wfb_cfg,ip,port,ip_server,port_server,ch_id,hb_freq,wlan,'\n')
 

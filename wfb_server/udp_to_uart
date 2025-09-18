@@ -2,6 +2,9 @@
 import socket
 import serial
 import click
+import signal
+import atexit
+import sys
 
 @click.command()
 @click.option('--port_rx', default=14785, help='mav_router_tx port')
@@ -13,6 +16,29 @@ def main(port_rx,ip_rx,uart,brate):
 
     print ("udp_to_uart initialization...\n")
 
+    ser_1 = None
+    sock_rx = None
+
+    def cleanup():
+        try:
+            if sock_rx is not None:
+                sock_rx.close()
+        except Exception as e:
+            print(e)
+        try:
+            if ser_1 is not None and ser_1.is_open:
+                ser_1.close()
+        except Exception as e:
+            print(e)
+
+    def signal_handler(sig, frame):
+        cleanup()
+        sys.exit(0)
+
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     try:
         ser_1 = serial.Serial(uart, brate)
         print ("serial port: ", uart)
@@ -22,11 +48,15 @@ def main(port_rx,ip_rx,uart,brate):
         print ('ip_rx: ', ip_rx)
         print ('port_rx: ', port_rx)
         while True:
-            data, addr = sock_rx.recvfrom(2048)
+            try:
+                data, addr = sock_rx.recvfrom(2048)
+            except OSError:
+                break
             ser_1.write(data)
-
     except Exception as e:
         print(f"error: {e}")
+    finally:
+        cleanup()
 
 if __name__ == '__main__':
     main()

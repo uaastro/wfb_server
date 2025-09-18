@@ -3,6 +3,9 @@ import socket
 import struct
 import time
 import click
+import signal
+import atexit
+import sys
 
 @click.command()
 @click.option('--mpkts', default=2048, help='udp max pkt size def: 2048')
@@ -27,8 +30,24 @@ def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn,rpn,dl):
     for i in range(ptxn):
         udp_streams.append({"ip": ip_tx, "port": port_tx + i})
     
-    #--init--
+    sock_tx = None
+    sock_rx = None
 
+    def cleanup():
+        for s in (sock_rx, sock_tx):
+            try:
+                if s is not None:
+                    s.close()
+            except Exception as e:
+                print(e)
+
+    def signal_handler(sig, frame):
+        cleanup()
+        sys.exit(0)
+
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
     sock_tx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -44,19 +63,22 @@ def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn,rpn,dl):
     print(f"rpn: {rpn}")
     print(f"dl: {dl}")
 
-    while True:
-        
-        data, addr = sock_rx.recvfrom(UDP_MAX_PKT_SIZE)
-        PACKET_SIZE = len(data)
-        pkt_num += 1
-        packet = struct.pack("!II"+str(PACKET_SIZE)+"s", link_id, pkt_num, data)
-        
-        for udp_stream in udp_streams:
-            for k in range(rpn):
-                sock_tx.sendto(packet, (udp_stream["ip"], udp_stream["port"]))
-                time.sleep(dl/1000)
+    try:
+        while True:
+            try:
+                data, addr = sock_rx.recvfrom(UDP_MAX_PKT_SIZE)
+            except OSError:
+                break
+            PACKET_SIZE = len(data)
+            pkt_num += 1
+            packet = struct.pack("!II"+str(PACKET_SIZE)+"s", link_id, pkt_num, data)
+            for udp_stream in udp_streams:
+                for k in range(rpn):
+                    sock_tx.sendto(packet, (udp_stream["ip"], udp_stream["port"]))
+                    time.sleep(dl/1000)
+    finally:
+        cleanup()
 
 
 if __name__ == '__main__':
     main()
-

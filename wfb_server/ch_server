@@ -88,14 +88,23 @@ def main(ip,port,hb_freq,mpkts):
     
     def signal_handler(sig, frame):
         #print("process terminate, sock.close")
-        sock.close()
         tx_process.terminate()
+        tx_process.join(timeout=0.01)
+        if tx_process.is_alive():
+            tx_process.kill()
+            tx_process.join()
+        
         rx_process.terminate()
+        rx_process.join(timeout=0.01)
+        if rx_process.is_alive():
+            rx_process.kill()
+            rx_process.join()
+        
+        sock.close()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
-
-    
+    signal.signal(signal.SIGTERM, signal_handler)
 
     tx_process.start()
     rx_process.start()

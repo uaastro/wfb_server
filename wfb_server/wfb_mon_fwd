@@ -4,6 +4,7 @@ import struct
 import click
 import sys
 import signal
+import atexit
 import time
 from multiprocessing import Process
 
@@ -17,27 +18,44 @@ from multiprocessing import Process
 @click.option('--wfbs_port', default=14650, help='wfb_server port def:14650')
 
 def main(mpkts,wfbms_ip,wfbms_port,fwd_ip,fwd_port,wfbs_ip,wfbs_port):
-    global exit_flag
-    exit_flag = False
+    
+    thread_heartbit = None
+    sock = None
+    sock_tx = None
+    
+    def cleanup():
+        try:
+            if thread_heartbit != None:
+                thread_heartbit.terminate()
+                thread_heartbit.join(timeout=0.01)
+                if thread_heartbit.is_alive():
+                    thread_heartbit.kill()
+                    thread_heartbit.join()
+            if sock != None:
+                sock.close()
+            
+        except Exception as e:
+            print(f"{e}")
 
     def signal_handler(sig, frame):
-        global exit_flag
-        exit_flag = True
+        cleanup()
+        print(f"{sig}: process terminated...")
         sys.exit(0)
+    
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, signal_handler)    
+    signal.signal(signal.SIGTERM, signal_handler)
+
 
     def heartbit(msg,hb_sock,hb_ip,hb_port):
-        global exit_flag
         hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
-        timestamp = time.time()
-        while not exit_flag:
+        while True:
             hb_sock.sendto(msg.encode("utf-8"),(hb_ip, hb_port))
             time.sleep(1)
-
+            
     UDP_MAX_PKT_SIZE = mpkts
     UDP_IP = wfbms_ip
     UDP_PORT = wfbms_port
-
-    signal.signal(signal.SIGINT, signal_handler)
 
     msg_connect = 'wfb_mon:connect'
     
@@ -63,7 +81,7 @@ def main(mpkts,wfbms_ip,wfbms_port,fwd_ip,fwd_port,wfbs_ip,wfbs_port):
     print(f"forwad host: {fwd_ip} : {fwd_port}")
     print(f"forwader: {UDP_IP} : {UDP_PORT}") 
 
-    while not exit_flag:
+    while True:
         packet, addr = sock.recvfrom(UDP_MAX_PKT_SIZE) 
         PACKET_SIZE = len(packet)
         if ((addr[0] == wfbms_ip) and (addr[1] == wfbms_port)):

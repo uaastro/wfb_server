@@ -3,6 +3,9 @@ import socket
 import struct
 import math
 import click
+import sys
+import signal
+import atexit
 
 @click.command()
 @click.option('--mpkts', default=2048, help='udp max pkt size def: 2048')
@@ -18,6 +21,23 @@ def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,pkt_mtu):
     chk_nums = int(0)
     chk_num = int(0)
     
+    sock = None
+
+    def cleanup():
+        try:
+            if sock is not None:
+                sock.close()
+        except Exception as e:
+            print(e)
+
+    def signal_handler(sig, frame):
+        cleanup()
+        sys.exit(0)
+
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((ip_rx, port_rx))
 
@@ -26,32 +46,23 @@ def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,pkt_mtu):
     print(f"tx: {ip_tx} : {port_tx}")
     print(f"pkt_mtu : {pkt_mtu}")
 
-    while True:
-        
-        data, addr = sock.recvfrom(mpkts)
-        pkt_size = len(data)
-        pkt_id += 1 
-        chk_nums = math.ceil(pkt_size/pkt_mtu)
-        i = int(0)
-        #print (f"pkt_id: {pkt_id} chk_nums: {chk_nums}")
-        for i in range (chk_nums):
-            
-            if i < (chk_nums-1):
-                #print (f"i: {i} chk_start: {i*pkt_mtu} chk_end: {(i+1)*pkt_mtu}")
-                #header = struct.pack("!III", pkt_id, chk_nums, chk_num)
-                #packet = struct.pack(str(pkt_mtu)+"s",data[i*pkt_mtu:(i+1)*pkt_mtu])
-                packet = struct.pack("!III"+str(pkt_mtu)+"s", pkt_id, chk_nums, i, data[i*pkt_mtu:(i+1)*pkt_mtu])
-            else:
-                #print (f"i: {i} chk_start: {i*pkt_mtu} chk_end: {pkt_size - i*pkt_mtu}")
-                #header = struct.pack("!III", pkt_id, chk_nums, chk_num)
-                #packet = struct.pack(str(pkt_size-i*pkt_mtu)+"s",data[i*pkt_mtu:pkt_size])
-                packet = struct.pack("!III"+str(pkt_size-i*pkt_mtu)+"s", pkt_id, chk_nums, i, data[i*pkt_mtu:pkt_size])
-            sock.sendto(packet, (ip_tx, port_tx))
-            #print (len(header))
-            #print (header)
-            #print (len(packet))
-            #print (packet)
+    try:
+        while True:
+            try:
+                data, addr = sock.recvfrom(mpkts)
+            except OSError:
+                break
+            pkt_size = len(data)
+            pkt_id += 1 
+            chk_nums = math.ceil(pkt_size/pkt_mtu)
+            for i in range(chk_nums):
+                if i < (chk_nums-1):
+                    packet = struct.pack("!III"+str(pkt_mtu)+"s", pkt_id, chk_nums, i, data[i*pkt_mtu:(i+1)*pkt_mtu])
+                else:
+                    packet = struct.pack("!III"+str(pkt_size-i*pkt_mtu)+"s", pkt_id, chk_nums, i, data[i*pkt_mtu:pkt_size])
+                sock.sendto(packet, (ip_tx, port_tx))
+    finally:
+        cleanup()
 
 if __name__ == '__main__':
     main()
-

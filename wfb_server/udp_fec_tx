@@ -3,6 +3,9 @@ import socket
 import struct
 import click
 import zfec
+import signal
+import atexit
+import sys
 
 
 def fec_encode(d_k,d_m,bloks: list) -> list:
@@ -51,7 +54,25 @@ def ring_blocks_encoder(rb_id,e_k,e_m, blocks: list) -> list:
 
 def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,k,m):
 
-    #--init--
+    sock_tx = None
+    sock_rx = None
+
+    def cleanup():
+        for s in (sock_rx, sock_tx):
+            try:
+                if s is not None:
+                    s.close()
+            except Exception as e:
+                print(e)
+
+    def signal_handler(sig, frame):
+        cleanup()
+        sys.exit(0)
+
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     sock_tx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     sock_rx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -63,38 +84,33 @@ def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,k,m):
     print(f"k: {k}")
     print(f"m: {m}")
     
-    # ====== TX ======
-    tx_list = []
     fec_ring_id = 0
 
-    while True:
-        fec_ring_id +=1 
-        fec_ring_data = []
+    try:
+        while True:
+            fec_ring_id +=1 
+            fec_ring_data = []
 
-        for i in range(k):
-            data, addr = sock_rx.recvfrom(mpkts)
-            PACKET_SIZE = len(data)
-            fec_ring_data.append(data)
+            while len(fec_ring_data) < k:
+                try:
+                    data, addr = sock_rx.recvfrom(mpkts)
+                except OSError:
+                    fec_ring_data = []
+                    break
+                fec_ring_data.append(data)
 
-        #print("\n","fec_ring_data: ",fec_ring_data,'\n')
+            if len(fec_ring_data) < k:
+                break
 
+            encoded_blocks = blocks_encoder(fec_ring_data)
+            encoded_fragments = fec_encode(k,m,encoded_blocks)
+            ring_tx_blocks = ring_blocks_encoder(fec_ring_id,k,m,encoded_fragments)
 
-        encoded_blocks = blocks_encoder(fec_ring_data)
-        #print ('encoded blocks: ',encoded_blocks)
-        #for encoded_block in encoded_blocks:
-        #    print(encoded_block,' : ', len(encoded_block))
-
-        encoded_fragments = fec_encode(k,m,encoded_blocks)
-        #print('\nfec encoded blocks: ', encoded_fragments)
-
-        ring_tx_blocks = ring_blocks_encoder(fec_ring_id,k,m,encoded_fragments)
-        #print ("ring_tx: ", ring_tx_blocks)
-
-        for tx_block in ring_tx_blocks:
-            sock_tx.sendto(tx_block,(ip_tx, port_tx))
-            #print("tx block: ", tx_block)
+            for tx_block in ring_tx_blocks:
+                sock_tx.sendto(tx_block,(ip_tx, port_tx))
+    finally:
+        cleanup()
 
 
 if __name__ == '__main__':
     main()
-

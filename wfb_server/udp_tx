@@ -10,6 +10,8 @@ import tty
 import termios
 
 import click
+import signal
+import atexit
 
 
 @click.command()
@@ -34,7 +36,20 @@ def main(lid,ip, port,pksize,pks):
     time_start= time.time()    
     i=0
 
-                
+    def cleanup():
+        try:
+            sock.close()
+        except Exception as e:
+            print(e)
+
+    def signal_handler(sig, frame):
+        cleanup()
+        sys.exit(0)
+
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     while True:
         i+=1
         packet_number = i
@@ -46,7 +61,7 @@ def main(lid,ip, port,pksize,pks):
         time.sleep(delay_usec)
                 
         sock.sendto(packet, (UDP_IP, UDP_PORT))
-        time_ls=time.time() 
-            
+        time_ls=time.time()
+
 if __name__ == '__main__':
     main()

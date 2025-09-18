@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 import socket
 import click
+import signal
+import atexit
+import sys
 
 @click.command()
 @click.option('--mpkts', default=4096, help='udp max pkt size def: 2048')
@@ -14,23 +17,59 @@ def main(mpkts,ip_rx,port_rx,ip_tx,port_tx):
     print("TCP to UDP fwd")
     print(f"ip_rx: {ip_rx} port_rx: {port_rx}")
     print(f"ip_tx: {ip_tx} port_tx: {port_tx}")
+
+    tcp_socket = None
+    conn = None
+    udp_socket = None
+
+    def cleanup():
+        for s in (conn, tcp_socket, udp_socket):
+            try:
+                if s is not None:
+                    s.close()
+            except Exception as e:
+                print(e)
+
+    def signal_handler(sig, frame):
+        cleanup()
+        sys.exit(0)
+
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_socket.bind((ip_rx, port_rx))
     tcp_socket.listen(1)
     print(f"\nwaiting for incoming connection at {ip_rx}:{port_rx}...\n")
-    conn, addr = tcp_socket.accept()
-    print(f"connection established with {addr}")
 
-    udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    while True:
-        data = conn.recv(mpkts)
-        if not data:
-            break
-        udp_socket.sendto(data, (ip_tx, port_tx))
-
-    return
+    try:
+        while True:
+            try:
+                conn, addr = tcp_socket.accept()
+            except OSError:
+                break
+            print(f"connection established with {addr}")
+            udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            try:
+                while True:
+                    try:
+                        data = conn.recv(mpkts)
+                    except OSError:
+                        break
+                    if not data:
+                        break
+                    udp_socket.sendto(data, (ip_tx, port_tx))
+            finally:
+                if conn is not None:
+                    conn.close()
+                    conn = None
+                if udp_socket is not None:
+                    udp_socket.close()
+                    udp_socket = None
+    finally:
+        cleanup()
 
 
 if __name__ == '__main__':
     main()
-

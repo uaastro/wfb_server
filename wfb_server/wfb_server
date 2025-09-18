@@ -17,22 +17,26 @@ from multiprocessing import Process
 
 def main(conf):
     
-    global process_list
-    global exit_flag
-    global process_heartbit
-
-    exit_flag = False
+    process_heartbit = None
+    sock = None
     process_list = []
 
     def subprocess_kill(pl):
-        global process_heartbit
         if process_heartbit != None:
             process_heartbit.terminate()
+            process_heartbit.join(timeout=0.01)
+            if process_heartbit.is_alive():
+                process_heartbit.kill()
+                process_heartbit.join()
             print('process was terminated: ', process_heartbit)
         if pl != None:
             for p in pl:
                 try:
                     p.terminate()
+                    p.join(timeout=0.01)
+                    if p.is_alive():
+                        p.kill()
+                        p.join()
                     print('process was terminated: ', p)
                 except: 
                     pass
@@ -40,21 +44,21 @@ def main(conf):
         return pl
 
     def signal_handler(sig, frame):
-        global exit_flag
-        global process_list
-        exit_flag = True
         subprocess_kill(process_list)
+        if sock != None:
+                sock.close()
         print ('wfb_server was terminated...')
         sys.exit(0)
     
     def heartbit(hb_sock,hb_wfb_server_ip,hb_wfb_server_port,hb_wfb_mon_ip,hb_wfb_mon_port):
-        global exit_flag
-        while not exit_flag:
+        while True:
             data, addr = sock.recvfrom(2048)
             sock.sendto(data, (hb_wfb_mon_ip, hb_wfb_mon_port))
-        return 0
-      
+        
     signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+   
+    
     wfb_server_dir = os.path.dirname(os.path.abspath(__file__))+"/"
     conf = wfb_server_dir+conf
     config = configparser.ConfigParser()
@@ -105,6 +109,7 @@ def main(conf):
     sock.bind((wfb_server_ip,wfb_server_port))
     process_heartbit = Process(target=heartbit, args=(sock,wfb_server_ip,wfb_server_port,wfb_mon_ip,wfb_mon_port))
     process_heartbit.start()
+    
     try:
 
         for section in sections:
@@ -436,12 +441,11 @@ def main(conf):
                 options=config[section]
                 subprocess.run(f"{wfb_server_dir}init_wlans --wfb_cfg {options['iwlx_wfb_cfg']} --prfx {options['iwlx_prfx']} --channel {options['iwlx_channel']} --wlans_nmbr {options['iwlx_wlans_nmbr']} --wlan_section {options['iwlx_wlan_section']}",shell=True, check=True)
 
-        ext=False
 
         fd_list = [process.stdout.fileno() for process in process_list]
         logging.info("wfb-server started")
 
-        while exit_flag is False:
+        while True:
             readable, _, _ = select.select(fd_list, [], [])
             for fd in readable:
                 for process in process_list:
@@ -450,7 +454,6 @@ def main(conf):
                         if return_code != 0:
                             print(f"[{process_id[process.pid]}] error! return code: {return_code}")
                             logging.error(f"[{process_id[process.pid]}] error! return code: {return_code}")
-                            exit_flag = True
                             subprocess_kill(process_list)
                             print ('wfb_server was terminated...')
                             sys.exit(0)

@@ -4,6 +4,8 @@ import struct
 import click
 import sys
 import time
+import signal
+import atexit
 
 
 @click.command()
@@ -24,6 +26,23 @@ def main(mpkts,ip_tx,port_tx,ip_rx,port_rx,port_wfbs,ip_wfbs):
     current_pkt_id = 0
     current_chk_num = 0
     asm_pkt = b'' 
+    sock = None
+
+    def cleanup():
+        try:
+            if sock is not None:
+                sock.close()
+        except Exception as e:
+            print(e)
+
+    def signal_handler(sig, frame):
+        cleanup()
+        sys.exit(0)
+
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     sock= socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((ip_rx,port_rx))
 
@@ -31,10 +50,14 @@ def main(mpkts,ip_tx,port_tx,ip_rx,port_rx,port_wfbs,ip_wfbs):
     print(f"rx: {ip_rx} : {port_rx}")
     print(f"tx: {ip_tx} : {port_tx}")
 
-    while True:
-        packet, addr = sock.recvfrom(mpkts) 
-        packet_size = len(packet)
-        pkt_id, chk_nums, chk_num, data= struct.unpack("!III"+str((packet_size - 4 - 4 - 4))+"s", packet)
+    try:
+        while True:
+            try:
+                packet, addr = sock.recvfrom(mpkts)
+            except OSError:
+                break
+            packet_size = len(packet)
+            pkt_id, chk_nums, chk_num, data= struct.unpack("!III"+str((packet_size - 4 - 4 - 4))+"s", packet)
         #print(f"#0/1: {pkt_id}:{chk_nums}:{chk_num}")
         #print(f"#0/2: {current_pkt_id}:{current_chk_num}:{chk_num}")
         if (current_pkt_id == pkt_id) and (current_chk_num == chk_num):
@@ -78,6 +101,8 @@ def main(mpkts,ip_tx,port_tx,ip_rx,port_rx,port_wfbs,ip_wfbs):
             time_stamp = time.time()
             pkt_lost = 0
             pkts = 0
+    finally:
+        cleanup()
 
 if __name__ == '__main__':
     main()
