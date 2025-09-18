@@ -79,7 +79,6 @@ def main(conf):
     wlans = []
     wlans_info = ""
     
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:    
         wfb_mon_ip = config['wfb_server']['wfb_mon_ip']
         wfb_mon_port = int(config['wfb_server']['wfb_mon_port'])
@@ -103,10 +102,15 @@ def main(conf):
     print(f"wfb_server_version_cfg: {wfb_server_version_cfg}")
          
         
-        
-        
-    
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)    
+    try:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if hasattr(socket, 'SO_REUSEPORT'):
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    except Exception:
+        pass            
     sock.bind((wfb_server_ip,wfb_server_port))
+    
     process_heartbit = Process(target=heartbit, args=(sock,wfb_server_ip,wfb_server_port,wfb_mon_ip,wfb_mon_port))
     process_heartbit.start()
     

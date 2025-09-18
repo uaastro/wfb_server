@@ -61,6 +61,12 @@ def main(port_r,ip_r,port_mp,ip_mp,ip_rtx,port_rtx):
 
     try:
         sock_proxy = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            sock_proxy.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            if hasattr(socket, 'SO_REUSEPORT'):
+                sock_proxy.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        except Exception:
+            pass
         sock_proxy.bind((UDP_IP_ROUTER, UDP_PORT_ROUTER))
         print ("socket... ok\n")
         print ("mav_router_rx loop starting...\n")

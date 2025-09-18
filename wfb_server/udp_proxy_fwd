@@ -49,6 +49,12 @@ def main(mpkts,ip_rx,port_rx,ip_tx,port_tx,ptxn,rpn,dl,mode):
     sock_tx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     sock_rx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        sock_rx.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if hasattr(socket, 'SO_REUSEPORT'):
+            sock_rx.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    except Exception:
+        pass
     sock_rx.bind((UDP_IP_RX, UDP_PORT_RX))
 
     print("udp_proxy_fwd started...")

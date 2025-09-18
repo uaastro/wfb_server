@@ -141,7 +141,12 @@ def main (ip,port,ip_tx,port_tx,chname,mp_ip,mp_port,id_tgs,id_tgc,id_cmd,id_src
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock_tx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock_tx.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        sock_tx.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if hasattr(socket, 'SO_REUSEPORT'):
+            sock_tx.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    except Exception:
+        pass
     sock_tx.bind((ip_tx, port_tx))
 
     ext = False
