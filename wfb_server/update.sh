@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 set -euo pipefail
 
@@ -8,8 +8,27 @@ SERVICE_DEST="/etc/systemd/system/wfb.service"
 
 echo "Updating files in ${DEST_DIR} from ${SCRIPT_DIR}"
 
-if [[ ! -d "${DEST_DIR}" ]];
-then
+if [[ -d "${DEST_DIR}" ]]; then
+    TIMESTAMP="$(date +%Y%m%d%H%M%S)"
+    BACKUP_DIR="${DEST_DIR}/backup_${TIMESTAMP}"
+    echo "Creating backup in ${BACKUP_DIR}"
+    mkdir -p "${BACKUP_DIR}"
+    shopt -s dotglob
+    for existing in "${DEST_DIR}"/*; do
+        [[ -e "${existing}" ]] || continue
+        if [[ "${existing}" == "${BACKUP_DIR}" ]]; then
+            continue
+        fi
+        name="$(basename "${existing}")"
+        if [[ "${name}" == backup_* ]]; then
+            echo "Skipping existing backup ${name}"
+            continue
+        fi
+        echo "Backing up ${name}"
+        cp -a "${existing}" "${BACKUP_DIR}/"
+    done
+    shopt -u dotglob
+else
     echo "Creating destination directory ${DEST_DIR}"
     mkdir -p "${DEST_DIR}"
 fi
