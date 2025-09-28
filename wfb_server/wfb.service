@@ -10,6 +10,7 @@ RemainAfterExit=no
 ExecStart=/usr/sbin/wfb_server/wfb_server
 User=root
 TimeoutStopSec=5s
+KillMode=control-group
 Restart=always
 RestartSec=1s
 

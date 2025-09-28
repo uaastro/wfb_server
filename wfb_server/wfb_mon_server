@@ -31,6 +31,7 @@ def main(mpkts,wfbms_ip,wfbms_port,wfbs_ip,wfbs_port):
             print(f"{e}")
 
     def signal_handler(sig, frame):
+        cleanup()
         print(f"{sig}: process terminated...")
         sys.exit(0)
     

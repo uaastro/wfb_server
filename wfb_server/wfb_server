@@ -11,6 +11,7 @@ import sys
 import logging
 import time
 from multiprocessing import Process
+import atexit
 
 @click.command()
 @click.option('--conf', default="wfb_server.cfg", help='path to config file')
@@ -20,6 +21,8 @@ def main(conf):
     process_heartbit = None
     sock = None
     process_list = []
+    killed_patterns = set()
+
 
     def subprocess_kill(pl):
         if process_heartbit is not None:
@@ -42,6 +45,23 @@ def main(conf):
                     pass
         pl.clear()
         return pl
+    
+    def cleanup():
+        try:
+            subprocess_kill(process_list)
+            if sock is not None:
+                sock.close()
+        except Exception as e:
+            print(f"{e}")
+            
+    def kill_stale_process(pattern):
+        if pattern in killed_patterns:
+            return
+        try:
+            subprocess.run(['pkill', '-9', '-f', pattern], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception as exc:
+            print(f'kill_stale_process failed for {pattern}: {exc}')
+        killed_patterns.add(pattern)
 
     def signal_handler(sig, frame):
         subprocess_kill(process_list)
@@ -54,7 +74,8 @@ def main(conf):
         while True:
             data, addr = sock.recvfrom(2048)
             sock.sendto(data, (hb_wfb_mon_ip, hb_wfb_mon_port))
-        
+    
+    atexit.register(cleanup)
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
    
@@ -91,7 +112,7 @@ def main(conf):
         wfb_server_ip = '127.0.0.1'
         wfb_server_port = 14650
 
-    wfb_server_version = '2.8.10'
+    wfb_server_version = '2.8.11'
     
     print("starting wfb-server...\n")
     print(f"wfb_mon_ip: {wfb_mon_ip}")
@@ -159,6 +180,7 @@ def main(conf):
                         "-n",options['n_RS_N'],
                         "-T",options['T_poll_timeout'],
                         "-i",options['i_link_id']] + wlans
+                kill_stale_process(wfb_xx[0])
                 process=subprocess.Popen(wfb_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -172,6 +194,7 @@ def main(conf):
                         "-u",options['udp_port'],
                         "-K",options['rx_key'],
                         "-i",options['i_link_id']]+ wlans
+                kill_stale_process(wfb_xx[0])
                 process=subprocess.Popen(wfb_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -185,7 +208,8 @@ def main(conf):
                         "--pksize",options['udp_tx_pksize'],
                         "--pks",options['udp_tx_pks'],
                         "--lid",options['udp_tx_lid']]
-                procesexcepts=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                kill_stale_process(udp_xx[0])
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
                 
@@ -200,6 +224,7 @@ def main(conf):
                         "--ptxn",options['uptx_ptxn'],
                         "--rpn",options['uptx_rpn'],
                         "--dl",options['uptx_dl']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -216,6 +241,7 @@ def main(conf):
                         "--port_wfbs",options['uprx_port_wfbs'],
                         "--mode",options['uprx_mode'],
                         "--alrt_max",options['uprx_alrt_max']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -232,6 +258,7 @@ def main(conf):
                         "--rpn",options['upfwd_rpn'],
                         "--dl",options['upfwd_dl'],
                         "--mode",options['upfwd_mode']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -243,6 +270,7 @@ def main(conf):
                         "--brate",options['utu_brate'],
                         "--udps_port",options['utu_udps_port'],
                         "--mode",options['utu_mode']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -255,6 +283,7 @@ def main(conf):
                         "--wfbms_port",options['wfbms_wfbms_port'],
                         "--wfbs_ip",options['wfbms_wfbs_ip'],
                         "--wfbs_port",options['wfbms_wfbs_port']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section 
@@ -269,6 +298,7 @@ def main(conf):
                         "--fwd_port",options['wfbmf_fwd_port'],
                         "--wfbs_ip",options['wfbmf_wfbs_ip'],
                         "--wfbs_port",options['wfbmf_wfbs_port']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section 
@@ -282,6 +312,7 @@ def main(conf):
                         "--port_mp",options['mvrrx_port_mp'],
                         "--ip_rtx",options['mvrrx_ip_rtx'],
                         "--port_rtx",options['mvrrx_port_rtx']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -292,6 +323,7 @@ def main(conf):
                         "--ip_r",options['mvrtx_ip_r'],
                         "--port_r",options['mvrtx_port_r'],
                         "--mode",options['mvrtx_mode']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -311,6 +343,7 @@ def main(conf):
                         "--id_cmd",options['wfbmm_id_cmd'],
                         "--id_srcs",options['wfbmm_id_srcs'],
                         "--id_srcc",options['wfbmm_id_srcc']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -323,6 +356,7 @@ def main(conf):
                         "--ip_tx",options['upftx_ip_tx'],
                         "--port_tx",options['upftx_port_tx'],
                         "--pkt_mtu",options['upftx_pkt_mtu']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -336,6 +370,7 @@ def main(conf):
                         "--port_tx",options['upfrx_port_tx'],
                         "--ip_wfbs",options['upfrx_ip_wfbs'],
                         "--port_wfbs",options['upfrx_port_wfbs']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -348,6 +383,7 @@ def main(conf):
                         "--port_rx",options['utf_port_rx'],
                         "--ip_tx",options['utf_ip_tx'],
                         "--port_tx",options['utf_port_tx']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -360,6 +396,7 @@ def main(conf):
                         "--port_rx",options['tuf_port_rx'],
                         "--ip_tx",options['tuf_ip_tx'],
                         "--port_tx",options['tuf_port_tx']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -377,6 +414,7 @@ def main(conf):
                         "--mpkts",options['chsw_mpkts'],
                         "--cmd_prfx",options['chsw_cmd_prfx'],
                         "--wlan",options['chsw_wlan']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -388,6 +426,7 @@ def main(conf):
                         "--port",options['chsv_port'],
                         "--hb_freq",options['chsv_hb_freq'],
                         "--mpkts",options['chsv_mpkts']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -402,6 +441,7 @@ def main(conf):
                         "--port_tx",options['uftx_port_tx'],
                         "--k",options['uftx_k'],
                         "--m",options['uftx_m']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -416,6 +456,7 @@ def main(conf):
                         "--port_tx",options['ufrx_port_tx'],
                         "--port_wfbs",options['ufrx_port_wfbs'],
                         "--ip_wfbs",options['ufrx_ip_wfbs']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -427,6 +468,7 @@ def main(conf):
                         "--ip_rx",options['udtu_ip_rx'],
                         "--uart",options['udtu_uart'],
                         "--brate",options['udtu_brate']]
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
@@ -437,6 +479,7 @@ def main(conf):
                 param_list = options['util_param'].split(' ') 
                 if param_list != ['']:
                     udp_xx += param_list 
+                kill_stale_process(udp_xx[0])
                 process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
                 process_list.append(process)
                 process_id[process.pid] = section
