@@ -33,16 +33,18 @@ else
     mkdir -p "${DEST_DIR}"
 fi
 
+shopt -s dotglob
 for path in "${SCRIPT_DIR}"/*; do
-    [[ -f "${path}" ]] || continue
+    [[ -e "${path}" ]] || continue
     filename="$(basename "${path}")"
     if [[ "${filename}" == "wfb_server.cfg" ]]; then
         echo "Skipping ${filename}"
         continue
     fi
     echo "Copying ${filename} to ${DEST_DIR}"
-    cp -f "${path}" "${DEST_DIR}/"
+    cp -a "${path}" "${DEST_DIR}/"
 done
+shopt -u dotglob
 
 if [[ ! -f "${SCRIPT_DIR}/wfb.service" ]]; then
     echo "Service file wfb.service not found in ${SCRIPT_DIR}" >&2

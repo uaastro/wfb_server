@@ -7,7 +7,7 @@ from commentedconfigparser import CommentedConfigParser
 @click.command()
 @click.option('--wfb_cfg', default='wfb_server.cfg', help='target cfg file, default wfb_server.cfg')
 @click.option('--prfx', default='wlx', help='wlan interface prefix wlx, wl, wlan, default is wlx')
-@click.option('--channel', default='149', help='wifi channel, default is 149')
+@click.option('--channel', default='64', help='wifi channel, default is 64')
 @click.option('--wlans_nmbr', default=1, help='number of wlans will be added, default is 1')
 @click.option('--wlan_section', default='wlan', help='wlan section of wfb_cfg file, default is wlan')
 
@@ -27,15 +27,18 @@ def main(wfb_cfg, prfx, channel, wlans_nmbr, wlan_section):
     config.read(wfb_cfg)
 
     wlans_list = get_wlans_list(prfx)
-    wlans = ''
+    if not wlans_list:
+        print('No WLAN interfaces found with prefix', prfx)
+        return
 
-    for wlan_idx in range(wlans_nmbr):
-        if wlan_idx > 0:
-            wlans += ' '
-        wlans += wlans_list[wlan_idx]
+    selected_wlans = wlans_list[:max(0, wlans_nmbr)]
+    if not selected_wlans:
+        print('No WLAN interfaces available to update config')
+        return
+
+    wlans = ' '.join(selected_wlans)
 
     config[wlan_section]['wlan'] = wlans
-    #config[wlan_section]['channel'] = channel
 
     with open(wfb_cfg,'w') as configfile:
         config.write(configfile)
