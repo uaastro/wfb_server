@@ -487,6 +487,8 @@ def main(conf):
             elif section[:10]=='init_wlans':
                 options=config[section]
                 subprocess.run(f"{wfb_server_dir}init_wlans --wfb_cfg {options['iwlx_wfb_cfg']} --prfx {options['iwlx_prfx']} --channel {options['iwlx_channel']} --wlans_nmbr {options['iwlx_wlans_nmbr']} --wlan_section {options['iwlx_wlan_section']}",shell=True, check=True)
+                config = configparser.ConfigParser()
+                config.read(conf)
 
 
         fd_list = [process.stdout.fileno() for process in process_list]
