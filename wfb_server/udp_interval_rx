@@ -1,0 +1,125 @@
+#!/usr/bin/python3
+
+import atexit
+import signal
+import socket
+import struct
+import sys
+import time
+from typing import Optional
+
+import click
+
+
+def make_recv_socket(bind_ip: str, bind_port: int) -> socket.socket:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    if hasattr(socket, "SO_REUSEPORT"):
+        try:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        except OSError:
+            pass
+    sock.bind((bind_ip, bind_port))
+    sock.settimeout(0.1)
+    return sock
+
+
+def make_send_socket() -> socket.socket:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.settimeout(0.1)
+    return sock
+
+
+def extract_interval(packet: bytes) -> Optional[int]:
+    if len(packet) < 4:
+        return None
+    interval = struct.unpack('>I', packet[-4:])[0]
+    return interval
+
+
+@click.command()
+@click.option('--ip_rx', default='0.0.0.0', show_default=True, help='UDP bind IP for tagged packets')
+@click.option('--port_rx', default=5001, type=int, show_default=True, help='UDP bind port for tagged packets')
+@click.option('--ip_tx', default='127.0.0.1', show_default=True, help='Destination IP for stripped packets')
+@click.option('--port_tx', default=5002, type=int, show_default=True, help='Destination port for stripped packets')
+@click.option('--max_len', default=2048, type=int, show_default=True, help='Maximum accepted datagram size (bytes)')
+def main(ip_rx: str, port_rx: int, ip_tx: str, port_tx: int, max_len: int) -> None:
+    recv_sock: Optional[socket.socket] = None
+    send_sock: Optional[socket.socket] = None
+    running = True
+
+    def handle_stop(_sig, _frame) -> None:
+        nonlocal running
+        running = False
+        cleanup()
+        sys.exit(0)
+
+    def cleanup() -> None:
+        for sock in (recv_sock, send_sock):
+            if sock is not None:
+                try:
+                    sock.close()
+                except Exception:
+                    pass
+
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, handle_stop)
+    signal.signal(signal.SIGTERM, handle_stop)
+
+    try:
+        recv_sock = make_recv_socket(ip_rx, port_rx)
+        send_sock = make_send_socket()
+    except OSError as exc:
+        print(f"[udp_interval_rx] socket setup failed: {exc}")
+        sys.exit(1)
+
+    print(f"[udp_interval_rx] listening on {ip_rx}:{port_rx} -> forwarding to {ip_tx}:{port_tx}")
+
+    next_send_ns = time.perf_counter_ns()
+
+    while running:
+        try:
+            packet, _peer = recv_sock.recvfrom(max_len)
+        except socket.timeout:
+            continue
+        except OSError as exc:
+            if running:
+                print(f"[udp_interval_rx] recv error: {exc}")
+            break
+
+        if len(packet) < 4:
+            continue
+
+        interval_us = extract_interval(packet)
+        if interval_us is None:
+            continue
+
+        payload = packet[:-4]
+        now_ns = time.perf_counter_ns()
+
+        if interval_us == 0:
+            next_send_ns = now_ns
+        else:
+            target_ns = max(now_ns, next_send_ns) + interval_us * 1_000
+            delay_ns = target_ns - now_ns
+            while delay_ns > 1_000_000:
+                time.sleep(delay_ns / 1_000_000_000)
+                now_ns = time.perf_counter_ns()
+                delay_ns = target_ns - now_ns
+            while delay_ns > 0:
+                time.sleep(0)
+                now_ns = time.perf_counter_ns()
+                delay_ns = target_ns - now_ns
+            next_send_ns = target_ns
+
+        try:
+            send_sock.sendto(payload, (ip_tx, port_tx))
+        except OSError as exc:
+            print(f"[udp_interval_rx] send error: {exc}")
+            break
+
+    cleanup()
+
+
+if __name__ == '__main__':
+    main()

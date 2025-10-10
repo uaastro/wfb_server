@@ -31,18 +31,15 @@ def main(conf):
             if process_heartbit.is_alive():
                 process_heartbit.kill()
                 process_heartbit.join()
-            print('process was terminated: ', process_heartbit)
-        if pl is not None:
-            for p in pl:
-                try:
-                    p.terminate()
-                    p.join(timeout=0.01)
-                    if p.is_alive():
-                        p.kill()
-                        p.join()
-                    print('process was terminated: ', p)
-                except: 
-                    pass
+            print('process was terminated: ', process_heartbit)         
+        for p in pl:
+            try:
+                p.terminate()
+                p.wait(timeout=0.01)
+            except subprocess.TimeoutExpired:
+                p.kill()
+                p.wait()
+            print('process was terminated:', p.pid)        
         pl.clear()
         return pl
     
@@ -112,7 +109,7 @@ def main(conf):
         wfb_server_ip = '127.0.0.1'
         wfb_server_port = 14650
 
-    wfb_server_version = '2.8.12'
+    wfb_server_version = '2.8.14'
     
     print("starting wfb-server...\n")
     print(f"wfb_mon_ip: {wfb_mon_ip}")
