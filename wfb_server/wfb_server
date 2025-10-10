@@ -260,6 +260,33 @@ def main(conf):
                 process_list.append(process)
                 process_id[process.pid] = section
 
+            elif section[:15]=='udp_interval_tx':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"udp_interval_tx",
+                        "--ip_rx",options['uitx_ip_rx'],
+                        "--port_rx",options['uitx_port_rx'],
+                        "--ip_tx",options['uitx_ip_tx'],
+                        "--port_tx",options['uitx_port_tx'],
+                        "--limit_ms",options['uitx_limit_ms'],
+                        "--max_len",options['uitx_max_len']]
+                kill_stale_process(udp_xx[0])
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
+
+            elif section[:15]=='udp_interval_rx':
+                options=config[section]
+                udp_xx=[wfb_server_dir+"udp_interval_rx",
+                        "--ip_rx",options['uirx_ip_rx'],
+                        "--port_rx",options['uirx_port_rx'],
+                        "--ip_tx",options['uirx_ip_tx'],
+                        "--port_tx",options['uirx_port_tx'],
+                        "--max_len",options['uirx_max_len']]
+                kill_stale_process(udp_xx[0])
+                process=subprocess.Popen(udp_xx, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
+                process_list.append(process)
+                process_id[process.pid] = section
+
             elif section[:11]=='uart_to_udp':
                 options=config[section]
                 udp_xx=[wfb_server_dir+"uart_to_udp",
