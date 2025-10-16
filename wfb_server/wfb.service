@@ -2,17 +2,17 @@
 Description=Wifibroadcast server
 After=network.target
 StartLimitInterval=20
-StartLimitBurst=21
+StartLimitBurst=210
 
 [Service]
 Type=simple
 RemainAfterExit=no
 ExecStart=/usr/sbin/wfb_server/wfb_server
 User=root
-TimeoutStopSec=5s
+TimeoutStopSec=100ms
 KillMode=control-group
 Restart=always
-RestartSec=1s
+RestartSec=100ms
 
 [Install]
 WantedBy=multi-user.target
